@@ -64,9 +64,11 @@ function SimpleSearch(dataSource){
 	/**
 	 * @public 
 	 * @param {String} format
+	 * @return {SimpleSearch}
 	 */
 	this.setDateFormat = function(format){
 		this.dateFormat = format;
+		return this;
 	}
 	
 	/**
@@ -167,9 +169,11 @@ function SimpleSearch(dataSource){
 	/**
 	 * @public 
 	 * @param {String} text
+	 * @return {SimpleSearch}
 	 */
 	this.setSearchText = function(text){
 		searchText = text;
+		return this;
 	}
 	
 	/**
@@ -437,6 +441,18 @@ function SimpleSearch(dataSource){
 	}
 	
 	/**
+	 * Loads records in existing foundset object
+	 * @public 
+	 * @param {JSFoundSet} foundset
+	 * @return {JSFoundSet}
+	 * 
+	 */
+	this.loadFoundSet = function(foundset){
+		foundset.loadRecords(this.getQuery());
+		return foundset;
+	}
+	
+	/**
 	 * Loads records in the specified foundset
 	 * @public 
 	 * @param {JSFoundSet} foundSet
@@ -690,7 +706,7 @@ function SimpleSearch(dataSource){
 	 * This should be called BEFORE adding any additional, related search providers
 	 * 
 	 * @public 
-	 * 
+	 * @return {SimpleSearch}
 	 */
 	this.setSearchAllColumns = function(){
 		//	clear search providers array
@@ -702,6 +718,7 @@ function SimpleSearch(dataSource){
 		for(var i in columnNames){
 			this.addSearchProvider(columnNames[i]);
 		}
+		return this;
 	}
 	
 	/**
@@ -800,9 +817,11 @@ function SimpleSearch(dataSource){
 		 *  
 		 * @public 
 		 * @param {Boolean} b
+		 * @return {SimpleSearch}
 		 */
 		this.setImpliedSearch = function(b){
 			implied = b;
+			return this
 		}
 		
 		/**
