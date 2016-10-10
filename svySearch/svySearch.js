@@ -197,6 +197,7 @@ function SimpleSearch(dataSource){
 		
 		var and = q.and;
 		for(var i in terms){
+			if(terms[i].ignored) continue;
 			
 			//	fielded search i.e. company_name:servoy
 			if(terms[i].field){
@@ -204,7 +205,7 @@ function SimpleSearch(dataSource){
 				var sp = this.getSearchProvider(alias);
 				if(!sp){
 					// TODO log warning
-					application.output('Search alias not found: ' + alias, LOGGINGLEVEL.WARNING);
+					log.warn('Search alias not found: ' + alias);
 					continue;
 					// TODO Handle aliases which are not found?
 				}
@@ -466,7 +467,7 @@ function SimpleSearch(dataSource){
 	/**
 	 * 
 	 * @protected   
-	 * @return {Array<{value:*, field:String, modifiers:{exclude:Boolean, exact:Boolean, gt:Boolean, ge:Boolean, lt:Boolean, le:Boolean, between:Boolean, valueMax:*}}>}
+	 * @return {Array<{value:*, field:String, modifiers:{exclude:Boolean, exact:Boolean, gt:Boolean, ge:Boolean, lt:Boolean, le:Boolean, between:Boolean, valueMax:*}, ignored:Boolean}>}
 	 */
 	this.parseSearchTerms = function(){
 		var str = searchText;
@@ -479,7 +480,8 @@ function SimpleSearch(dataSource){
 			//	setup search term value
 			var term = {
 				value:quotedStrings[i],
-				modifiers:{}
+				modifiers:{},
+				ignored:false
 			}
 			
 			//	check quoted value for fielded search, i.e. type:"full time"
@@ -491,12 +493,14 @@ function SimpleSearch(dataSource){
 				var field = str.substring(last,index);
 				term.field = field;
 				
-				// FIXME remove ccode duplicated from unquoted
+				// FIXME remove code duplicated from unquoted
 				
 				// apply substitutions
 				var sp = this.getSearchProvider(term.field);
 				if(!sp){
 					log.warn('Could not parse search term: "'+s+'". It will be ignored. No search provider or alias named: ' + term.field);
+					term.ignored = true;
+					terms.push(term);
 					continue;
 				}
 				var searchString = term.value;
@@ -605,6 +609,8 @@ function SimpleSearch(dataSource){
 				var sp = this.getSearchProvider(term.field);
 				if(!sp){
 					log.warn('Could not parse search term: "'+s+'". It will be ignored. No search provider or alias named: ' + term.field);
+					term.ignored = true;
+					terms.push(term);
 					continue;
 				}
 				var searchString = term.value;
