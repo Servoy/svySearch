@@ -17,9 +17,14 @@ function onSearch(){
 		return;
 	}
 	
+	//	create search object and add search providers
+	var search = scopes.svySearch.createSimpleSearch(foundset);
+	
+	// set the search text
+	search.setSearchText(searchText);
+	
 	//	list of data providers to include in search
 	var searchProviders = [
-		'orderdate',
 		'shipaddress',
 		'shipcity',
 		'shipcountry',
@@ -34,15 +39,15 @@ function onSearch(){
 		'orders_to_order_details.order_details_to_products.productname'
 	];
 	
-	//	create search object and add search providers
-	var search = scopes.svySearch.createSimpleSearch(foundset);
-	search.setSearchText(searchText);
+	// add search providers
 	for(var i in searchProviders){
 		search.addSearchProvider(searchProviders[i]);
 	}
 	
 	//	execute search
-	search.loadFoundSet(foundset);
+	search.loadRecords(foundset);
+	application.output(databaseManager.getSQL(foundset));
+	application.output(databaseManager.getSQLParameters(foundset));
 	
 }
 
@@ -54,7 +59,7 @@ function onSearch$basic(){
 	scopes.svySearch.createSimpleSearch(foundset)
 		.setSearchAllColumns()
 		.setSearchText(searchText)
-		.loadFoundSet(foundset);
+		.loadRecords(foundset);
 }
 
 /**
@@ -78,13 +83,16 @@ function onSearch$caseInsensitive(){
  */
 function onSearch$explicit$dateFormat()
 {
+	//	create the search
 	var search = scopes.svySearch.createSimpleSearch(foundset)
-		.setSearchText(searchText);
+		.setSearchText(searchText)		// 	set the search text
+		.setDateFormat('MM/dd/yyyy');	//	Set the date format which is used
 	
+	//	add order date as an explicit search
 	search.addSearchProvider('orderdate')
 		.setAlias('ordered')			//	specify the alias which may be used	
 		.setImpliedSearch(false)		//	specify that the column is not searched unless explicitly specified
-		.setDateFormat('MM/dd/yyyy');	//	Set the date format which is used
-
+		
+	// run search
 	search.loadRecords(foundset);
 }
