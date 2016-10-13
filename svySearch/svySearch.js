@@ -10,7 +10,7 @@ var log = scopes.svyLogManager.getLogger('com.servoy.bap.search.SimpleSearch');
  * 
  * @public 
  * @param {String|JSFoundSet|JSRecord} dataSource The data source used
- *
+ * @return {SimpleSearch}
  * @properties={typeid:24,uuid:"BCC9AB14-EA27-4000-8F45-72A9F4A17159"}
  */
 function createSimpleSearch(dataSource){
@@ -54,6 +54,8 @@ function SimpleSearch(dataSource){
 	
 	
 	/**
+	 * Returns the date format which is used to parse user input for searching dates
+	 * 
 	 * @public 
 	 * @return {String}
 	 */
@@ -62,6 +64,7 @@ function SimpleSearch(dataSource){
 	}
 	
 	/**
+	 * Sets the date formatting which will be used to parse user input
 	 * @public 
 	 * @param {String} format
 	 * @return {SimpleSearch}
@@ -72,6 +75,7 @@ function SimpleSearch(dataSource){
 	}
 	
 	/**
+	 * Returns the data source used by the search object
 	 * @public 
 	 * @return {String}
 	 */
@@ -81,12 +85,17 @@ function SimpleSearch(dataSource){
 	
 	/**
 	 * @public 
-	 * @param {String} dataProviderID
-	 * @param {String} [alias]
-	 * @param {Boolean} [impliedSearch]
-	 * @param {Boolean} [caseSensitive]
+	 * @param {String} dataProviderID The data provider that will be searched. Can be columns, related columns
+	 * @param {String} [alias] The natural language name of the search provider. Used in explicit searches.
+	 * @param {Boolean} [impliedSearch] Set this false to indicate that a provider is not searchable unless explicitly referenced
+	 * @param {Boolean} [caseSensitive] Set this to be true to force case-sensitive search on this search provider
 	 * 
 	 * @return {SearchProvider}
+	 * 
+	 * @example <pre>
+	 * simpleSearch.addSearchProvider('orderdate', 'date', false, false);
+	 * </pre>
+	 * 
 	 */
 	this.addSearchProvider = function(dataProviderID, alias, impliedSearch, caseSensitive){
 		
@@ -119,7 +128,9 @@ function SimpleSearch(dataSource){
 	}
 	
 	/**
+	 * Gets the specified SearchProvider
 	 * @public 
+	 * @param {String} aliasOrDataProvider The name or alias of the data provider
 	 * @return {SearchProvider}
 	 */
 	this.getSearchProvider = function(aliasOrDataProvider){
@@ -167,8 +178,9 @@ function SimpleSearch(dataSource){
 //	}
 	
 	/**
+	 * Set the raw, user input to be parsed
 	 * @public 
-	 * @param {String} text
+	 * @param {String} text The raw text to be parsed
 	 * @return {SimpleSearch}
 	 */
 	this.setSearchText = function(text){
@@ -177,6 +189,7 @@ function SimpleSearch(dataSource){
 	}
 	
 	/**
+	 * Gets the raw, unparsed input text
 	 * @public
 	 * @return {String}
 	 */
@@ -185,6 +198,7 @@ function SimpleSearch(dataSource){
 	}
 	
 	/**
+	 * Creates and returns a query object parsed from the user input
 	 * @public 
 	 * @return {QBSelect}
 	 */
@@ -421,7 +435,8 @@ function SimpleSearch(dataSource){
 	}
 	
 	/**
-	 * Get dataset results of search
+	 * Executes the search and returns the results as a JSDataSet
+	 * 
 	 * @public 
 	 * @param {Number} [maxRows]
 	 * @return {JSDataSet}
@@ -431,7 +446,7 @@ function SimpleSearch(dataSource){
 	}
 	
 	/**
-	 * Gets a new foundset and loads the records in it
+	 * Creates a factory foundset, runs the search and returns it
 	 * @public 
 	 * @return {JSFoundSet}
 	 */
@@ -442,22 +457,10 @@ function SimpleSearch(dataSource){
 	}
 	
 	/**
-	 * Loads records in existing foundset object
-	 * @public 
-	 * @param {JSFoundSet} foundset
-	 * @return {JSFoundSet}
-	 * 
-	 */
-	this.loadFoundSet = function(foundset){
-		foundset.loadRecords(this.getQuery());
-		return foundset;
-	}
-	
-	/**
 	 * Loads records in the specified foundset
 	 * @public 
-	 * @param {JSFoundSet} foundSet
-	 * @return {Boolean}
+	 * @param {JSFoundSet} foundSet The JSFoundSet object upon which to load records
+	 * @return {Boolean} True indicates query was successful, although may have loaded zero records
 	 * 
 	 */
 	this.loadRecords = function(foundSet){
@@ -762,6 +765,9 @@ function SimpleSearch(dataSource){
 		this.substitutions = {};
 		
 		/**
+		 * Add a substitution kev-value pair to this search provider
+		 * Substitutions provide replacement capability for user input.
+		 * A typical use case involves parsing a value list display value
 		 * @public 
 		 * @param {String} key A string to be replaced 
 		 * @param {String|Number} value The value to replace it with
@@ -773,7 +779,8 @@ function SimpleSearch(dataSource){
 		}
 		
 		/**
-		 * @public 
+		 * Internal use
+		 * @protected  
 		 * @return {Array<{key:String,value:String}>}
 		 */
 		this.getSubstitutions = function(){
@@ -789,17 +796,47 @@ function SimpleSearch(dataSource){
 		}
 		
 		/**
+		 * Get all the keys for substitutions
 		 * @public 
+		 * @return {Array<String>}
+		 */
+		this.getSubstitutionsKeys = function(){
+			var keys = [];
+			for(var key in this.substitutions){
+				var value = this.substitutions[key];
+				if(value != null){
+					keys.push(key);
+				}
+			}
+			return keys;
+		}
+		
+		/**
+		 * Get the substitution value for a given key
+		 * @public 
+		 * @param {String} key The substitution key
 		 * @return {String}
+		 */
+		this.getSubstitutionValue = function(key){
+			var value = this.substitutions[key];
+			return value;
+		}
+		
+		/**
+		 * Gets the data provider ID
+		 * @public 
+		 * @return {String} The data provider which will be searched
 		 */
 		this.getDataProviderID = function(){
 			return dataProviderID;
 		}
 		
 		/**
+		 * Sets the natural language name for this SearchProvider
+		 * The alias can be used in explicit searches
 		 * TODO Support multiple aliases ?
 		 * @public 
-		 * @param {String} alias
+		 * @param {String} alias The alias
 		 * @return {SearchProvider}
 		 */
 		this.setAlias = function(alias){
@@ -808,8 +845,9 @@ function SimpleSearch(dataSource){
 		}
 		
 		/**
+		 * Gets the alias of this search provider. 
 		 * @public 
-		 * @return {String}
+		 * @return {String} The alias, or null if none was specified
 		 */
 		this.getAlias = function(){
 			return a;
@@ -819,18 +857,19 @@ function SimpleSearch(dataSource){
 		 * 
 		 * Specifies if this search provider is included in implied search
 		 * A value of true indicates that the provider will always be searched
-		 * A value of false indicates that provider will ONLY be searched when used in expliccit field matching
+		 * A value of false indicates that provider will ONLY be searched when used in explicit field matching
 		 *  
 		 * @public 
 		 * @param {Boolean} b
-		 * @return {SimpleSearch}
+		 * @return {SearchProvider}
 		 */
 		this.setImpliedSearch = function(b){
 			implied = b;
-			return this
+			return this;
 		}
 		
 		/**
+		 * Indicates if this SearchProvider is an implied search
 		 * @public 
 		 * @return {Boolean}
 		 */
@@ -839,14 +878,18 @@ function SimpleSearch(dataSource){
 		}
 		
 		/**
+		 * Specifies if this SearchProvider will perform case-sensitive searches
 		 * @public 
 		 * @param {Boolean} b
+		 * @return {SearchProvider}
 		 */
 		this.setCaseSensitive = function(b){
 			caseSensitive = b;
+			return this;
 		}
 		
 		/**
+		 * Indicates if this SearchProvider is case-sensitive
 		 * @public 
 		 * @return {Boolean}
 		 */
@@ -855,6 +898,7 @@ function SimpleSearch(dataSource){
 		}
 		
 		/**
+		 * Get the JSColumn object that corresponds to this search provider
 		 * @public 
 		 * @return {JSColumn}
 		 */
@@ -863,6 +907,7 @@ function SimpleSearch(dataSource){
 		}
 		
 		/**
+		 * Get the JSTable object that corresponds to this search provider
 		 * @public 
 		 * @return {JSTable}
 		 */
@@ -876,7 +921,7 @@ function SimpleSearch(dataSource){
 /**
  * TODO Possibly move to svyUtils module
  * 
- * @public 
+ * @protected  
  * @param {QBSelect} q
  * @param {String} dataProviderID
  * @return {QBColumn}
