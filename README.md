@@ -1,9 +1,11 @@
 # Search APIs for Servoy
-========
+---
 'svySearch' is a module of the Servoy Business Application Platform. It provides APIs for text-based, user-interactive searching.
 
 Getting started
 -------------
+
+Get the latest version from the [releases](https://github.com/Servoy/svySearch/releases). Download and import the [svySearchExample.servoy](https://github.com/Servoy/svySearch/releases/download/v1.0.0/svySearchExample.servoy), projects as zip files or check out source directly from github.
 
 Documentation
 -------------
