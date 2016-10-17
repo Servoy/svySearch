@@ -23,6 +23,171 @@ function createSimpleSearch(dataSource){
 }
 
 /**
+ * @private  
+ * @param {String} searchText
+ * @return {Array<{
+ * 		field:String,
+ * 		value:String, 
+ * 		valueMax:String, 
+ * 		quoted:Boolean,
+ * 		modifiers:{exclude:Boolean, exact:Boolean, gt:Boolean, ge:Boolean, lt:Boolean, le:Boolean, between:Boolean}}>}
+ * }>}
+ *
+ * @properties={typeid:24,uuid:"766A2B1B-C8C9-44E1-9C8A-1EF44E60AEB8"}
+ */
+function parse(searchText){
+	
+	// copy searchText to overwrite
+	var str = searchText;
+	
+	/**
+	 * terms that will be parsed 
+	 * @type {Array<{
+	 * 		field:String,
+	 * 		value:String, 
+	 * 		valueMax:String, 
+	 * 		quoted:Boolean,
+	 * 		modifiers:{exclude:Boolean, exact:Boolean, gt:Boolean, ge:Boolean, lt:Boolean, le:Boolean, between:Boolean}}>}
+	 * }>} */
+	
+	var terms = [];
+	
+	//	parse quoted terms
+	var quotedStrings = parseEnclosedStrings(str);
+	
+	for(var i in quotedStrings){
+		terms.push({
+			value:quotedStrings[i],
+			modifiers:{
+				exact:false,
+				exclude:false,
+				gt:false,
+				ge:false,
+				lt:false,
+				le:false,
+				between:false
+			},
+			field:null,
+			valueMax:null,
+			quoted:true,
+			ignored:false
+		});
+		
+		// remove term from string
+		str = utils.stringReplace(str,'"'+quotedStrings[i]+'"','');
+	}
+	
+	// parse unquoted strings
+	var unquotedStrings = str.split(' ');
+	for(i in unquotedStrings){
+		var s = utils.stringTrim(unquotedStrings[i]);
+		if(!s){
+			continue;
+		}
+		
+		terms.push({
+			value:s,
+			modifiers:{
+				exact:false,
+				exclude:false,
+				gt:false,
+				ge:false,
+				lt:false,
+				le:false,
+				between:false
+			},
+			field:null,
+			valueMax:null,
+			quoted:false
+		});
+	}
+	
+	for(i in terms){
+		var term = terms[i];
+		parseField(term);
+		parseModifiers(term);
+		
+	}
+	return terms;
+}
+
+/**
+ * @private  
+ * @param {{
+ * 		field:String,
+ * 		value:String, 
+ * 		valueMax:String,
+ * 		quoted:Boolean, 
+ * 		modifiers:{exclude:Boolean, exact:Boolean, gt:Boolean, ge:Boolean, lt:Boolean, le:Boolean, between:Boolean}}} term
+ * @return {{
+ * 		field:String,
+ * 		value:String, 
+ * 		valueMax:String, 
+ * 		quoted:Boolean,
+ * 		modifiers:{exclude:Boolean, exact:Boolean, gt:Boolean, ge:Boolean, lt:Boolean, le:Boolean, between:Boolean}}}
+ *
+ * @properties={typeid:24,uuid:"CD125763-4A68-4C3F-93D3-F8029CD16F5E"}
+ */
+function parseField(term){
+	
+	var info = term.value.split(':');
+	if(info.length > 1){
+		term.field = info[0]
+		term.value = info[1];
+	}
+	return term;
+}
+
+/**
+ * @private 
+ * @param {{
+ * 		field:String,
+ * 		value:String, 
+ * 		valueMax:String, 
+ * 		modifiers:{exclude:Boolean, exact:Boolean, gt:Boolean, ge:Boolean, lt:Boolean, le:Boolean, between:Boolean}}} term
+ * @return {{
+ * 		field:String,
+ * 		value:String, 
+ * 		valueMax:String, 
+ * 		modifiers:{exclude:Boolean, exact:Boolean, gt:Boolean, ge:Boolean, lt:Boolean, le:Boolean, between:Boolean}}}
+ *
+ * @properties={typeid:24,uuid:"0AE587E6-4D24-4868-863A-9EC7DF5EA5F4"}
+ */
+function parseModifiers(term){
+	
+	var mod = term.value.charAt(0);
+	if(mod == '-'){
+		term.modifiers.exclude = true;
+		term.value = term.value.substr(1);
+	} else if(mod == '+'){
+		term.modifiers.exact = true;
+		term.value = term.value.substr(1);
+	} else if(mod == '>'){
+		if(term.value.charAt(1) == '='){
+			term.modifiers.ge = true;
+			term.value = term.value.substr(1);
+		} else {
+			term.modifiers.gt = true;
+		}
+		term.value = term.value.substr(1);
+	} else if(mod == '<'){
+		if(term.value.charAt(1) == '='){
+			term.modifiers.le = true;
+			term.value = term.value.substr(1);
+		} else {
+			term.modifiers.lt = true;
+		}
+		term.value = term.value.substr(1);
+	} else if(term.value.indexOf('...') != -1){
+		term.modifiers.between = true;
+		var values = term.value.split('...');
+		term.value = values[0];
+		term.valueMax = values[1];
+	}
+	return term;
+}
+
+/**
  * Constructor for SimpleSearch (Use factory methods instead)
  * @private 
  * @constructor 
@@ -49,7 +214,7 @@ function SimpleSearch(dataSource){
 	 * @protected  
 	 * @type {String}
 	 */
-	this.dateFormat = 'yyyy/MM/dd';
+	var dateFormat = 'yyyy/MM/dd';
 	
 	
 	
@@ -60,7 +225,7 @@ function SimpleSearch(dataSource){
 	 * @return {String}
 	 */
 	this.getDateFormat = function(){
-		return this.dateFormat;
+		return dateFormat;
 	}
 	
 	/**
@@ -70,7 +235,7 @@ function SimpleSearch(dataSource){
 	 * @return {SimpleSearch}
 	 */
 	this.setDateFormat = function(format){
-		this.dateFormat = format;
+		dateFormat = format;
 		return this;
 	}
 	
@@ -207,49 +372,42 @@ function SimpleSearch(dataSource){
 		var q = databaseManager.createSelect(dataSource);
 		q.result.addPk();
 
-		var terms = this.parseSearchTerms();
-		
+//		var terms = this.parseSearchTerms();
+		var terms = parse(searchText);
 		var and = q.and;
 		for(var i in terms){
-			if(terms[i].ignored) continue;
+			var term = terms[i];
+//			if(terms[i].ignored) continue;
 			
 			//	fielded search i.e. company_name:servoy
-			if(terms[i].field){
-				var alias = terms[i].field;
+			if(term.field){
+				
+				//	get SearchProvider
+				var alias = term.field;
 				var sp = this.getSearchProvider(alias);
 				if(!sp){
-					// TODO log warning
-					log.warn('Search alias not found: ' + alias);
+					log.warn('Search alias not found: ' + alias + '. Search term will be ignored');
 					continue;
-					// TODO Handle aliases which are not found?
 				}
 				
+				//	Prepare column metadata
 				var dp = sp.getDataProviderID()
 				var column = parseQBColumn(q,dp);
-				var value = terms[i].value;
-				var valueMax = terms[i].valueMax;
 				var type = sp.getJSColumn().getType();
 				
-				//	APPLY SUBSTITUTIONS
-//				if(value instanceof String){
-//					/** @type {String} */
-//					var str = value;
-//					var substitutions = sp.getSubstitutions();
-//					for(var s in substitutions){
-//						var searchMask = substitutions[s].key;
-//						var replaceMask = substitutions[s].value
-//						if(!sp.isCaseSensitive()){
-//							str = str.replace(new RegExp(searchMask, "ig"),replaceMask);
-//						} else {
-//							str = utils.stringReplace(str,searchMask,replaceMask);
-//						}
-//					}
-//					value = str;
-//				}
+				//	apply subs
+				var value = sp.applySubstitutions(term.value);
+				var valueMax = sp.applySubstitutions(term.valueMax);
+				
+				//	cast
+				value = sp.castString(value);
+				valueMax = sp.castString(valueMax);
+				
+				//	APPLY Modifiers
 				
 				//	EXCLUDE MODIFIER
 				//	TODO NOT operator causing unexpected results with null values
-				if(terms[i].modifiers.exclude){
+				if(term.modifiers.exclude){
 					if(type == JSColumn.TEXT){
 						if(sp.isCaseSensitive()){
 							and = and.add(column.not.like('%'+value+'%'));
@@ -267,7 +425,7 @@ function SimpleSearch(dataSource){
 					}
 					
 				//	EXACT MODIFIER
-				} else if(terms[i].modifiers.exact){
+				} else if(term.modifiers.exact){
 					if(type == JSColumn.TEXT){
 						if(sp.isCaseSensitive()){
 							and = and.add(column.eq(value));
@@ -279,7 +437,7 @@ function SimpleSearch(dataSource){
 					}
 				
 				//	GT MODIFIER
-				} else if(terms[i].modifiers.gt){
+				} else if(term.modifiers.gt){
 					if(type == JSColumn.DATETIME) {
 						/** @type {Date} */
 						min = value;
@@ -291,15 +449,15 @@ function SimpleSearch(dataSource){
 					}
 					
 				// GE MODIFIER
-				} else if(terms[i].modifiers.ge){
+				} else if(term.modifiers.ge){
 					and = and.add(column.ge(value));
 					
 				// LT MODIFIER
-				} else if(terms[i].modifiers.lt){
+				} else if(term.modifiers.lt){
 					and = and.add(column.le(value));
 				
 				// LE MODIFER
-				} else if(terms[i].modifiers.le){
+				} else if(term.modifiers.le){
 					if(type == JSColumn.DATETIME) {
 						/** @type {Date} */
 						min = value;
@@ -350,6 +508,11 @@ function SimpleSearch(dataSource){
 			var or = q.or;
 			for(var j in searchProviders){
 				sp = searchProviders[j];
+				dp = sp.getDataProviderID();
+				column = parseQBColumn(q,dp);
+				value = terms[i].value;
+				
+				//	skip non-implied search
 				if(!sp.isImpliedSearch()){
 					continue;
 				}
@@ -361,26 +524,25 @@ function SimpleSearch(dataSource){
 					continue;
 				}
 				
-				dp = sp.getDataProviderID();
-				column = parseQBColumn(q,dp);
-				value = terms[i].value;
+				// APPLY SUBSTITUTIONS
+				value = sp.applySubstitutions(value);
 				
 				// APPLY SUBSTITUTIONS
-				if(value instanceof String){
-					/** @type {String} */
-					str = value;
-					substitutions = sp.getSubstitutions();
-					for(s in substitutions){
-						searchMask = substitutions[s].key;
-						replaceMask = substitutions[s].value
-						if(!sp.isCaseSensitive()){
-							str = str.replace(new RegExp(searchMask, "ig"),replaceMask);
-						} else {
-							str = utils.stringReplace(str,searchMask,replaceMask);
-						}
-					}
-					value = str;
-				}
+//				if(value instanceof String){
+//					/** @type {String} */
+//					str = value;
+//					substitutions = sp.getSubstitutions();
+//					for(s in substitutions){
+//						searchMask = substitutions[s].key;
+//						replaceMask = substitutions[s].value
+//						if(!sp.isCaseSensitive()){
+//							str = str.replace(new RegExp(searchMask, "ig"),replaceMask);
+//						} else {
+//							str = utils.stringReplace(str,searchMask,replaceMask);
+//						}
+//					}
+//					value = str;
+//				}
 				
 				//	EXCLUDE MODIFIER
 				if(terms[i].modifiers.exclude){
@@ -388,7 +550,6 @@ function SimpleSearch(dataSource){
 						and = and.add(column.not.like('%'+value+'%'));
 					} else {
 						and = and.add(q.or.add(column.upper.not.like('%'+value.toUpperCase()+'%')).add(column.isNull));
-//						and = and.add(column.upper.not.like('%'+value.toUpperCase()+'%'));
 					}
 					
 				//	EXACT MODIFIER
@@ -467,248 +628,6 @@ function SimpleSearch(dataSource){
 		return foundSet.loadRecords(this.getQuery());
 	}
 	
-	/**
-	 * 
-	 * @protected   
-	 * @return {Array<{value:*, field:String, modifiers:{exclude:Boolean, exact:Boolean, gt:Boolean, ge:Boolean, lt:Boolean, le:Boolean, between:Boolean, valueMax:*}, ignored:Boolean}>}
-	 */
-	this.parseSearchTerms = function(){
-		var str = searchText;
-		var terms = [];
-		
-		//	parse quoted strings
-		var quotedStrings = parseEnclosedStrings(str);
-		for(var i in quotedStrings){
-			
-			//	setup search term value
-			var term = {
-				value:quotedStrings[i],
-				modifiers:{},
-				ignored:false
-			}
-			
-			//	check quoted value for fielded search, i.e. type:"full time"
-			var index = str.indexOf(quotedStrings[i]) - 2;
-			if(str.charAt(index) == ':'){
-				var last = Math.max(str.lastIndexOf(' ',index),0);
-					
-				//	setup field
-				var field = str.substring(last,index);
-				term.field = field;
-				
-				// FIXME remove code duplicated from unquoted
-				
-				// apply substitutions
-				var sp = this.getSearchProvider(term.field);
-				if(!sp){
-					log.warn('Could not parse search term: "'+s+'". It will be ignored. No search provider or alias named: ' + term.field);
-					term.ignored = true;
-					terms.push(term);
-					continue;
-				}
-				var searchString = term.value;
-				var substitutions = sp.getSubstitutions();
-				for(var j in substitutions){
-					var searchMask = substitutions[j].key;
-					var replaceMask = substitutions[j].value
-					if(!sp.isCaseSensitive()){
-						searchString = searchString.replace(new RegExp(searchMask, "ig"),replaceMask);
-					} else {
-						searchString = utils.stringReplace(searchString,searchMask,replaceMask);
-					}
-				}
-				term.value = searchString;
-				
-				var type = sp.getJSColumn().getType();
-				if(type == JSColumn.DATETIME){
-					term.value = utils.parseDate(term.value,this.getDateFormat());
-					if(!term.value){
-						// TODO WARN cannot parse date
-						continue;
-					}
-					if(term.valueMax != null){
-						term.valueMax = utils.parseDate(term.valueMax,this.getDateFormat());
-						if(!term.valueMax){
-							// TODO WARN cannot parse date
-							continue;
-						}
-					}
-				} else if(type == JSColumn.INTEGER){
-					term.value = parseInt(term.value,10);
-					if(term.value == NaN){
-						// TODO WARN cannot parse 
-						continue;
-					}
-					if(term.valueMax != null){
-						term.valueMax = parseInt(term.valueMax,10);
-						if(term.valueMax == NaN){
-							// TODO WARN cannot parse 
-							continue;
-						}
-					}
-				} else if(type == JSColumn.NUMBER){
-					term.value = parseFloat(term.value);
-					if(term.value == NaN){
-						// TODO WARN cannot parse 
-						continue;
-					}
-					if(term.valueMax != null){
-						term.valueMax = parseFloat(term.valueMax);
-						if(term.valueMax == NaN){
-							// TODO WARN cannot parse 
-							continue;
-						}
-					}
-				}
-				
-				
-				
-				
-				
-				
-				//	remove from search string
-				str = utils.stringReplace(str,field+':','');
-			}
-			
-			// remove term from string
-			str = utils.stringReplace(str,'"'+quotedStrings[i]+'"','');
-			
-			terms.push(term);
-		}
-		
-		//	parse unquoted strings
-		var unquotedStrings = str.split(' ');
-		for(i in unquotedStrings){
-			var s = utils.stringTrim(unquotedStrings[i]);
-			if(!s){
-				continue;
-			}
-			var term = {
-				value:s,
-				modifiers:{
-					exact:false,
-					exclude:false,
-					gt:false,
-					ge:false,
-					lt:false,
-					le:false,
-					between:false
-				},
-				field:null,
-				valueMax:null
-			};
-			
-			//	parse fielded search
-			var info = s.split(':');
-			if(info.length > 1){
-				term.field = info[0]
-				term.value = info[1];
-			}
-			
-			// parse correct value based on fielded search data type
-			if(term.field){
-				
-				//	apply substitutions
-				var sp = this.getSearchProvider(term.field);
-				if(!sp){
-					log.warn('Could not parse search term: "'+s+'". It will be ignored. No search provider or alias named: ' + term.field);
-					term.ignored = true;
-					terms.push(term);
-					continue;
-				}
-				var searchString = term.value;
-				var substitutions = sp.getSubstitutions();
-				for(var j in substitutions){
-					var searchMask = substitutions[j].key;
-					var replaceMask = substitutions[j].value
-					if(!sp.isCaseSensitive()){
-						searchString = searchString.replace(new RegExp(searchMask, "ig"),replaceMask);
-					} else {
-						searchString = utils.stringReplace(searchString,searchMask,replaceMask);
-					}
-				}
-				term.value = searchString;
-				
-				var type = sp.getJSColumn().getType();
-				if(type == JSColumn.DATETIME){
-					term.value = utils.parseDate(term.value,this.getDateFormat());
-					if(!term.value){
-						// TODO WARN cannot parse date
-						continue;
-					}
-					if(term.valueMax != null){
-						term.valueMax = utils.parseDate(term.valueMax,this.getDateFormat());
-						if(!term.valueMax){
-							// TODO WARN cannot parse date
-							continue;
-						}
-					}
-				} else if(type == JSColumn.INTEGER){
-					term.value = parseInt(term.value,10);
-					if(term.value == NaN){
-						// TODO WARN cannot parse 
-						continue;
-					}
-					if(term.valueMax != null){
-						term.valueMax = parseInt(term.valueMax,10);
-						if(term.valueMax == NaN){
-							// TODO WARN cannot parse 
-							continue;
-						}
-					}
-				} else if(type == JSColumn.NUMBER){
-					term.value = parseFloat(term.value);
-					if(term.value == NaN){
-						// TODO WARN cannot parse 
-						continue;
-					}
-					if(term.valueMax != null){
-						term.valueMax = parseFloat(term.valueMax);
-						if(term.valueMax == NaN){
-							// TODO WARN cannot parse 
-							continue;
-						}
-					}
-				}
-			}
-			
-			//	parse modifiers
-			if(term.value instanceof String){
-				var mod = term.value.charAt(0);
-				if(mod == '-'){
-					term.modifiers.exclude = true;
-					term.value = term.value.substr(1);
-				} else if(mod == '+'){
-					term.modifiers.exact = true;
-					term.value = term.value.substr(1);
-				} else if(mod == '>'){
-					if(term.value.charAt(1) == '='){
-						term.modifiers.ge = true;
-						term.value = term.value.substr(1);
-					} else {
-						term.modifiers.gt = true;
-					}
-					term.value = term.value.substr(1);
-				} else if(mod == '<'){
-					if(term.value.charAt(1) == '='){
-						term.modifiers.le = true;
-						term.value = term.value.substr(1);
-					} else {
-						term.modifiers.lt = true;
-					}
-					term.value = term.value.substr(1);
-				} else if(term.value.indexOf('...') != -1){
-					term.modifiers.between = true;
-					var values = term.value.split('...');
-					term.value = values[0];
-					term.valueMax = values[1];
-				}
-			}
-			
-			terms.push(term);
-		}
-		return terms;
-	}
 	
 	/**
 	 * Sets that all columns are to be searchable
@@ -776,23 +695,6 @@ function SimpleSearch(dataSource){
 		this.addSubstitution = function(key,value){
 			this.substitutions[key] = value;
 			return this;
-		}
-		
-		/**
-		 * Internal use
-		 * @protected  
-		 * @return {Array<{key:String,value:String}>}
-		 */
-		this.getSubstitutions = function(){
-			/** @type {Array<{key:String,value:String}>} */
-			var substitutions = [];
-			for(var key in this.substitutions){
-				var value = this.substitutions[key];
-				if(value != null){
-					substitutions.push({key:key,value:value});
-				}
-			}
-			return substitutions;
 		}
 		
 		/**
@@ -908,11 +810,63 @@ function SimpleSearch(dataSource){
 		
 		/**
 		 * Get the JSTable object that corresponds to this search provider
+		 * 
 		 * @public 
 		 * @return {JSTable}
 		 */
 		this.getJSTable = function(){
 			return parseJSColumnInfo(search.getDataSource(),dataProviderID).table;
+		}
+		
+		/**
+		 * Apply defined substitutions to a given string 
+		 * @public 
+		 * @param {String} value The value for which substitutions will be applied
+		 * @return {String} the value after substitutions
+		 */
+		this.applySubstitutions = function(value){
+			
+			//	get all keys
+			var keys = this.getSubstitutionsKeys()
+			for(var j in keys){
+				
+				//	replace key
+				var searchMask = keys[j];
+				var replaceMask = this.getSubstitutionValue(searchMask);
+				if(!this.isCaseSensitive()){
+					value = value.replace(new RegExp(searchMask, "ig"),replaceMask);
+				} else {
+					value = utils.stringReplace(value,searchMask,replaceMask);
+				}
+			}
+			return value;
+		}
+		
+		/**
+		 * Casts a given string into a value compatible with the search provider's data type
+		 * 
+		 * @public  
+		 * @param {String} value The value to be parsed
+		 * @return {Date|Number|String} The parsed value
+		 */
+		this.castString = function(value){
+			
+			var type = this.getJSColumn().getType();
+			if(type == JSColumn.DATETIME){
+				return utils.parseDate(value,dateFormat);
+			}
+			if(type == JSColumn.INTEGER){
+				return parseInt(value,10);
+			}
+			if(type == JSColumn.NUMBER){
+				return parseFloat(value);
+			}
+			if(type == JSColumn.TEXT){
+				return value;
+			}
+			
+			log.warn('SearchProvider ['+this.getDataProviderID()+'] has unsupported column type');
+			return value;
 		}
 	}
 
@@ -921,7 +875,7 @@ function SimpleSearch(dataSource){
 /**
  * TODO Possibly move to svyUtils module
  * 
- * @protected  
+ * @private  
  * @param {QBSelect} q
  * @param {String} dataProviderID
  * @return {QBColumn}
