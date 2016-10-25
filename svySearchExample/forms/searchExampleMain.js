@@ -10,5 +10,7 @@
  */
 function onLoad(event) {
 	// set divider location
-	elements.tabs.dividerLocation = 400;
+	elements.tabs.dividerLocation = 600;
+	
+	elements.tabs.leftFormMinSize = 400;
 }

@@ -1,0 +1,11 @@
+dataSource:"db:/example_data/orders",
+items:[
+{
+dataProviderIDToAggregate:"orderid",
+name:"count_orders",
+typeid:40,
+uuid:"F224F0AA-3302-4E7E-84E3-026C472818FD"
+}
+],
+typeid:39,
+uuid:"335B992A-50C0-4502-BF2C-D0C0E36ECC61"

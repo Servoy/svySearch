@@ -44,10 +44,20 @@ function onSearch(){
 		search.addSearchProvider(searchProviders[i]);
 	}
 	
+	//	add order date as an explicit search
+	search.addSearchProvider('orderdate')
+		.setAlias('ordered')			//	specify the alias which may be used	
+		.setImpliedSearch(false)		//	specify that the column is not searched unless explicitly specified
+		
+	//	add freight as an explicit search
+	search.addSearchProvider('freight')	
+		.setImpliedSearch(false)		//	specify that the column is not searched unless explicitly specified
+	
 	//	execute search
 	search.loadRecords(foundset);
 	application.output(databaseManager.getSQL(foundset));
 	application.output(databaseManager.getSQLParameters(foundset));
+	
 	
 }
 
@@ -95,4 +105,23 @@ function onSearch$explicit$dateFormat()
 		
 	// run search
 	search.loadRecords(foundset);
+}
+
+/**
+ * @properties={typeid:24,uuid:"281E4E86-04F4-4451-8750-F11055D100F1"}
+ */
+function onSearch$substitutions(){
+	
+//	create the search
+	var search = scopes.svySearch.createSimpleSearch(foundset)
+		.setSearchText(searchText)		// 	set the search text
+		
+	search.addSearchProvider('shipcountry')
+		.addSubstitution('fr','France')
+		.setAlias('country');
+	
+	//	execute search
+	search.loadRecords(foundset);
+	application.output(databaseManager.getSQL(foundset));
+	application.output(databaseManager.getSQLParameters(foundset));
 }

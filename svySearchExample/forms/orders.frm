@@ -6,7 +6,7 @@ items:[
 dataProviderID:"employeeid",
 displayType:2,
 editable:false,
-location:"20,110",
+location:"20,100",
 name:"employeeid",
 size:"220,30",
 typeid:4,
@@ -42,6 +42,16 @@ text:"City",
 transparent:true,
 typeid:7,
 uuid:"6B205577-D4B0-499C-8FF9-E6FBFD5215D3"
+},
+{
+labelFor:"freight",
+location:"20,140",
+name:"freight_label",
+size:"220,20",
+text:"Freight",
+transparent:true,
+typeid:7,
+uuid:"6BEA344F-FD54-47E8-9326-4B74DD571CF6"
 },
 {
 labelFor:"shippostalcode",
@@ -82,7 +92,7 @@ uuid:"A70C0A80-23AC-4B92-9D11-9ADBC93F4ECC"
 },
 {
 labelFor:"employeeid",
-location:"20,90",
+location:"20,80",
 name:"employeeid_label",
 size:"220,20",
 text:"Sales Rep",
@@ -131,6 +141,16 @@ name:"shippostalcode",
 size:"190,30",
 typeid:4,
 uuid:"E163A7B8-1C96-45BF-ADD7-64E84ABF4EC9"
+},
+{
+dataProviderID:"freight",
+format:"¤#.00|#.00",
+horizontalAlignment:4,
+location:"20,160",
+name:"freight",
+size:"220,30",
+typeid:4,
+uuid:"EE54C419-95E2-469A-88A0-801019954A65"
 },
 {
 labelFor:"shipcountry",

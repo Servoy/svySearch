@@ -1,0 +1,20 @@
+@IMPORT url("example.css");
+
+.svy-label.info
+{
+	font-size: 14px;
+	font-style: italic;
+	color: #557;
+}
+
+.svy-field.search
+{
+	font-size: 16px;
+	color: #666;
+	border-radius: 6px;
+}
+.search-icon
+{
+	color: #666;
+	font-size: 20px;
+}
