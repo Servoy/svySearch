@@ -400,8 +400,8 @@ function SimpleSearch(dataSource){
 				var valueMax = sp.applySubstitutions(term.valueMax);
 				
 				//	cast
-				value = sp.castString(value);
-				valueMax = sp.castString(valueMax);
+				value = sp.cast(value);
+				valueMax = sp.cast(valueMax);
 				
 				//	APPLY Modifiers
 				
@@ -849,7 +849,7 @@ function SimpleSearch(dataSource){
 		 * @param {String} value The value to be parsed
 		 * @return {Date|Number|String} The parsed value
 		 */
-		this.castString = function(value){
+		this.cast = function(value){
 			
 			var type = this.getJSColumn().getType();
 			if(type == JSColumn.DATETIME){
