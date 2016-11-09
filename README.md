@@ -26,5 +26,5 @@ Eager to fix a bug or introduce a new feature? Clone the repository and issue a 
 
 License
 -------
-svyUtils is licensed under the MIT license
+svySearch is licensed under the [MIT license](https://opensource.org/licenses/MIT)
 
