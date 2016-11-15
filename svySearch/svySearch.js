@@ -372,12 +372,10 @@ function SimpleSearch(dataSource){
 		var q = databaseManager.createSelect(dataSource);
 		q.result.addPk();
 
-//		var terms = this.parseSearchTerms();
 		var terms = parse(searchText);
 		var and = q.and;
 		for(var i in terms){
 			var term = terms[i];
-//			if(terms[i].ignored) continue;
 			
 			//	fielded search i.e. company_name:servoy
 			if(term.field){
@@ -395,9 +393,13 @@ function SimpleSearch(dataSource){
 				var column = parseQBColumn(q,dp);
 				var type = sp.getJSColumn().getType();
 				
-				//	apply subs
-				var value = sp.applySubstitutions(term.value);
-				var valueMax = sp.applySubstitutions(term.valueMax);
+				//	apply substitutions
+				if(term.value){
+					var value = sp.applySubstitutions(term.value);
+				}
+				if(term.valueMax){
+					var valueMax = sp.applySubstitutions(term.valueMax);
+				}
 				
 				//	cast
 				value = sp.cast(value);
