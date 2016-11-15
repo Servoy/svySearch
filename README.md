@@ -2,10 +2,12 @@
 ---
 'svySearch' is a module of the Servoy Business Application Platform. It provides APIs for text-based, user-interactive searching.
 
+Eager to get started? Check out this [**Video Introduction!**](https://youtu.be/ic1G8YgWaF8)
+
 Getting started
 -------------
 
-Get the latest version from the [releases](https://github.com/Servoy/svySearch/releases). Download and import the [svySearchExample.servoy](https://github.com/Servoy/svySearch/releases/download/v1.0.0/svySearchExample.servoy), projects as zip files or check out source directly from github.
+Get the latest version from the [releases](https://github.com/Servoy/svySearch/releases). Download and import the [svySearchExample.servoy](https://github.com/Servoy/svySearch/releases/download/v1.0.1/svySearchExample.servoy), projects as zip files or check out source directly from github.
 
 Documentation
 -------------
@@ -24,5 +26,5 @@ Eager to fix a bug or introduce a new feature? Clone the repository and issue a 
 
 License
 -------
-svyUtils is licensed under the MIT license
+svySearch is licensed under the [MIT license](https://opensource.org/licenses/MIT)
 
