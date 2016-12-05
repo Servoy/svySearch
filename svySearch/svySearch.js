@@ -264,10 +264,17 @@ function SimpleSearch(dataSource){
 	 */
 	this.addSearchProvider = function(dataProviderID, alias, impliedSearch, caseSensitive){
 		
+		// check if alias or data providdercwas already added
 		for(var i in searchProviders){
 			if(searchProviders[i].getDataProviderID() == dataProviderID){
 				throw new scopes.svyExceptions.IllegalArgumentException('Search Provider already found: ' + dataProviderID);
 			}
+		}
+		
+		// check if relations is x-db (not supported)
+		if(dataProviderHasXDBRelation(dataProviderID)){
+			log.warn('Search provider will not be added');
+			return null;
 		}
 		
 		var sp = new SearchProvider(this,dataProviderID);
@@ -987,4 +994,27 @@ function arrayCopy(a){
 	var a2 = [];
 	a.forEach(function(e){a2.push(e)});
 	return a2;
+}
+
+/**
+ * Check a data provider string for presence of a relation which is cross-database
+ * @private 
+ * @param {String} dataProviderID
+ * @return {Boolean}
+ *
+ * @properties={typeid:24,uuid:"5D004F36-C8D2-4072-894D-C14E11D5E462"}
+ */
+function dataProviderHasXDBRelation(dataProviderID){
+	var path = dataProviderID.split('.');
+	path.pop();
+	while(path.length){
+		var relation = solutionModel.getRelation(path.pop());
+		var primaryServer = databaseManager.getDataSourceServerName(relation.primaryDataSource);
+		var foreignServer = databaseManager.getDataSourceServerName(relation.foreignDataSource);
+		if(primaryServer != foreignServer){
+			log.warn('Invalid data provider ['+dataProviderID+'] has a cross-database relation ['+relation.name+'] which is not supported');
+			return true;
+		}
+	}
+	return false;
 }
