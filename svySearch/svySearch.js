@@ -130,11 +130,17 @@ function parse(searchText){
  */
 function parseField(term){
 	
-	var info = term.value.split(':');
-	if(info.length > 1){
-		term.field = info[0]
-		term.value = info[1];
+	// skip if quoted string
+	if(!term.quoted){
+		
+		// parse field name
+		var info = term.value.split(':');
+		if(info.length > 1){
+			term.field = info[0]
+			term.value = info[1];
+		}
 	}
+	
 	return term;
 }
 
