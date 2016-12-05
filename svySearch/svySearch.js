@@ -138,6 +138,11 @@ function parseField(term){
 		if(info.length > 1){
 			term.field = info[0]
 			term.value = info[1];
+			
+			// empty value, i.e. "field:"
+			if(!term.value.length){
+				log.warn('Parsed term with empty value for field: ' + term.field + ':' + term.value);
+			}
 		}
 	}
 	
@@ -409,6 +414,12 @@ function SimpleSearch(dataSource){
 				var sp = this.getSearchProvider(alias);
 				if(!sp){
 					log.warn('Search alias not found: ' + alias + '. Search term will be ignored');
+					continue;
+				}
+				
+				// check for empty field value
+				if(!term.value){
+					log.warn('Explicit search term for field ['+term.field+'] contains no value. Search term will be ignored.')
 					continue;
 				}
 				
