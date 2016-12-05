@@ -269,21 +269,32 @@ function SimpleSearch(dataSource){
 	 * 
 	 */
 	this.addSearchProvider = function(dataProviderID, alias, impliedSearch, caseSensitive){
+		var sp;
 		
-		// check if alias or data providdercwas already added
+		// check if alias or data provider was already added
+		var spExists = false;
 		for(var i in searchProviders){
 			if(searchProviders[i].getDataProviderID() == dataProviderID){
-				throw new scopes.svyExceptions.IllegalArgumentException('Search Provider already found: ' + dataProviderID);
+				log.warn('Search Provider already added for: ' + dataProviderID + ' and will be updated.');
+				spExists = true;
+				sp = searchProviders[i];
+				break;
 			}
 		}
 		
-		// check if relations is x-db (not supported)
-		if(dataProviderHasXDBRelation(dataProviderID)){
-			log.warn('Search provider will not be added');
-			return null;
+		//	 search provider is new
+		if(!spExists){
+			
+			// check if relations is x-db (not supported)
+			if(dataProviderHasXDBRelation(dataProviderID)){
+				throw new scopes.svyExceptions.IllegalArgumentException('Cross-DB relation found and is not supported. Search provider will not be added');
+			}
+			
+			sp = new SearchProvider(this,dataProviderID);
+			searchProviders.push(sp);
 		}
 		
-		var sp = new SearchProvider(this,dataProviderID);
+		// update SP
 		if(alias){
 			sp.setAlias(alias);
 		}
@@ -293,7 +304,7 @@ function SimpleSearch(dataSource){
 		if(caseSensitive instanceof Boolean){
 			sp.setCaseSensitive(caseSensitive);
 		}
-		searchProviders.push(sp);
+		
 		return sp;
 	}
 	
