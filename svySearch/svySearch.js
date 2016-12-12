@@ -491,7 +491,7 @@ function SimpleSearch(dataSource){
 					
 				// LT MODIFIER
 				} else if(term.modifiers.lt){
-					and = and.add(column.le(value));
+					and = and.add(column.lt(value));
 				
 				// LE MODIFER
 				} else if(term.modifiers.le){
@@ -607,7 +607,7 @@ function SimpleSearch(dataSource){
 					
 				//	LT MODIFIER
 				} else if(terms[i].modifiers.lt){
-					or  = or.add(column.le(value));
+					or  = or.add(column.lt(value));
 					
 				//	LE MODIFIER
 				} else if(terms[i].modifiers.le){
