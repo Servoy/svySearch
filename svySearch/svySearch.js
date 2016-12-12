@@ -863,8 +863,13 @@ function SimpleSearch(dataSource){
 		 */
 		this.applySubstitutions = function(value){
 			
-			//	get all keys
-			var keys = this.getSubstitutionsKeys()
+			//	get all keys. Sort them so based on string length decending to avoid one key replacing part of another
+			var keys = this.getSubstitutionsKeys().sort(function(s1,s2){
+				if(s1.length > s2.length) return -1;
+				if(s1.length < s2.length) return 1;
+				return 0;
+			});
+			
 			for(var j in keys){
 				
 				//	replace key
