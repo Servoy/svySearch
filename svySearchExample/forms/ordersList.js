@@ -53,6 +53,11 @@ function onSearch(){
 	search.addSearchProvider('freight')	
 		.setImpliedSearch(false)		//	specify that the column is not searched unless explicitly specified
 	
+	//	add product status, use substitutions to parse display values for integers
+	search.addSearchProvider('orders_to_order_details.order_details_to_products.discontinued','product-status')
+		.addSubstitution('active',0)
+		.addSubstitution('inactive',-1)
+		
 	//	execute search
 	search.loadRecords(foundset);
 	application.output(databaseManager.getSQL(foundset));
