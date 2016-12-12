@@ -54,10 +54,10 @@ function parse(searchText){
 	
 	//	parse quoted terms
 	var quotedStrings = parseEnclosedStrings(str);
-	
 	for(var i in quotedStrings){
-		terms.push({
-			value:quotedStrings[i],
+		var value = quotedStrings[i];
+		var term = {
+			value:value,
 			modifiers:{
 				exact:false,
 				exclude:false,
@@ -71,10 +71,22 @@ function parse(searchText){
 			valueMax:null,
 			quoted:true,
 			ignored:false
-		});
+		};
 		
-		// remove term from string
-		str = utils.stringReplace(str,'"'+quotedStrings[i]+'"','');
+		// check for quoted field search, i.e. country:"united states"
+		var index = str.indexOf(value) - 2;
+		if(str.charAt(index) === ':'){
+			var start = str.lastIndexOf(' ',index);
+			term.field = str.substring(start,index);
+			// remove field from string
+			str = utils.stringReplace(str,term.field+':','');
+		}
+		
+		// remove value from string
+		str = utils.stringReplace(str,'"'+value+'"','');
+		
+		// add term
+		terms.push(term);
 	}
 	
 	// parse unquoted strings
@@ -863,7 +875,7 @@ function SimpleSearch(dataSource){
 		 */
 		this.applySubstitutions = function(value){
 			
-			//	get all keys. Sort them so based on string length decending to avoid one key replacing part of another
+			//	get all keys. Sort them so based on string length descending to avoid one key replacing part of another
 			var keys = this.getSubstitutionsKeys().sort(function(s1,s2){
 				if(s1.length > s2.length) return -1;
 				if(s1.length < s2.length) return 1;
