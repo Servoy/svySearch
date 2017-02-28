@@ -115,7 +115,7 @@ function parse(searchText){
 	}
 	
 	for(i in terms){
-		var term = terms[i];
+		term = terms[i];
 		parseField(term);
 		parseModifiers(term);
 		
@@ -854,7 +854,8 @@ function SimpleSearch(dataSource){
 		 * @return {JSColumn}
 		 */
 		this.getJSColumn = function(){
-			return parseJSColumnInfo(search.getDataSource(),dataProviderID).column;
+			var jsColumn = parseJSColumnInfo(search.getDataSource(),dataProviderID);
+			return !jsColumn ? null : jsColumn.column;
 		}
 		
 		/**
@@ -864,7 +865,8 @@ function SimpleSearch(dataSource){
 		 * @return {JSTable}
 		 */
 		this.getJSTable = function(){
-			return parseJSColumnInfo(search.getDataSource(),dataProviderID).table;
+			var jsColumn = parseJSColumnInfo(search.getDataSource(),dataProviderID);
+			return !jsColumn ? null : jsColumn.table;
 		}
 		
 		/**
@@ -974,12 +976,12 @@ function parseJSColumnInfo(dataSource, dataProviderID){
 		
 	}
 	if(!table){
-		// TODO warn here
+		log.warn('Parse column info failed. No table found for: ' + dataSource);
 		return null;
 	}
 	var column = table.getColumn(colName)
 	if(!column){
-		// TODO warn here
+		log.warn('Parse column info failed. No column found for: dataSource=' + dataSource + ', dataProvider=' + dataProviderID);
 		return null;
 	}
 	return {table:table, column:column};
