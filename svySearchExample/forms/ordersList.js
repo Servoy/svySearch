@@ -44,6 +44,9 @@ function onSearch(){
 		search.addSearchProvider(searchProviders[i]);
 	}
 	
+	search.getSearchProvider('shipcountry')
+		.setAlias('country');
+	
 	//	add order date as an explicit search
 	search.addSearchProvider('orderdate')
 		.setAlias('ordered')			//	specify the alias which may be used	

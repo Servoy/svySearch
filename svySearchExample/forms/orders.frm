@@ -28,14 +28,14 @@ uuid:"E20418A0-6681-4DEA-A872-023298196F5D"
 location:"10,270",
 name:"tabs",
 printable:false,
-size:"620,240",
+size:"460,240",
 transparent:true,
 typeid:16,
 uuid:"5418565B-ABBE-457B-8DC6-D99D22113E79"
 },
 {
 labelFor:"shipcity",
-location:"440,80",
+location:"280,80",
 name:"shipcity_label",
 size:"190,20",
 text:"City",
@@ -55,7 +55,7 @@ uuid:"6BEA344F-FD54-47E8-9326-4B74DD571CF6"
 },
 {
 labelFor:"shippostalcode",
-location:"440,200",
+location:"280,200",
 name:"shippostalcode_label",
 size:"190,20",
 text:"Postal Code",
@@ -65,7 +65,7 @@ uuid:"7846EECB-990C-4886-AE6F-99BBB228FD4F"
 },
 {
 dataProviderID:"shipcountry",
-location:"440,160",
+location:"280,160",
 name:"shipcountry",
 size:"190,30",
 typeid:4,
@@ -84,7 +84,7 @@ valuelistID:"46AC7E83-19D0-40B1-B20D-D544218C7D56"
 },
 {
 dataProviderID:"shipcity",
-location:"440,100",
+location:"280,100",
 name:"shipcity",
 size:"190,30",
 typeid:4,
@@ -112,7 +112,7 @@ uuid:"BC82DE91-3BC5-41E9-9CC7-BCDD32EC8116"
 },
 {
 dataProviderID:"shipaddress",
-location:"440,40",
+location:"280,40",
 name:"shipaddress",
 size:"190,30",
 typeid:4,
@@ -120,7 +120,7 @@ uuid:"C748C207-66B6-4D6C-AAD4-54DD5F2CBA96"
 },
 {
 labelFor:"shipaddress",
-location:"440,20",
+location:"280,20",
 name:"shipaddress_label",
 size:"190,20",
 text:"Address",
@@ -136,7 +136,7 @@ uuid:"C97165DA-C5DC-401C-AE69-BDE8D5406D90"
 },
 {
 dataProviderID:"shippostalcode",
-location:"440,220",
+location:"280,220",
 name:"shippostalcode",
 size:"190,30",
 typeid:4,
@@ -154,7 +154,7 @@ uuid:"EE54C419-95E2-469A-88A0-801019954A65"
 },
 {
 labelFor:"shipcountry",
-location:"440,140",
+location:"280,140",
 name:"shipcountry_label",
 size:"190,20",
 text:"Country",
@@ -165,5 +165,6 @@ uuid:"F98E9D47-6BAB-45CA-BD36-D8705631AD3F"
 ],
 name:"orders",
 showInMenu:true,
+size:"480,520",
 typeid:3,
 uuid:"8E56C493-7AEC-4030-ABD5-EE556B24F608"
