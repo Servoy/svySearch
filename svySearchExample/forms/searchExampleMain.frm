@@ -30,7 +30,7 @@ uuid:"4610260A-CEAD-4053-9C16-2D0968C3154F"
 },
 {
 anchors:11,
-imageMediaID:"4B6AD4F8-FE91-430C-BDAC-8638A60260CF",
+imageMediaID:"784D56FB-FF89-4A5D-AED4-FB1730A774F7",
 location:"10,0",
 size:"620,100",
 styleClass:"banner-orange",
