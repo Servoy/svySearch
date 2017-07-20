@@ -94,5 +94,5 @@ function getWebSiteURL() {
  * @properties={typeid:24,uuid:"9CCEDD1F-E7B4-4EE5-B90D-2C78133FF953"}
  */
 function getParent() {
-	return forms.extensionSamples;
+	return forms.dataSamples;
 }
