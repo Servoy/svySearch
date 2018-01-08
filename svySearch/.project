@@ -3,7 +3,6 @@
 	<name>svySearch</name>
 	<comment></comment>
 	<projects>
-		<project>resources</project>
 		<project>picasResources</project>
 	</projects>
 	<buildSpec>
