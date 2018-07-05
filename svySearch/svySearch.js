@@ -569,7 +569,7 @@ function SimpleSearch(dataSource){
 				//	SKIP NON-TEXT types for implied search
 				type = sp.getJSColumn().getType();
 				if(type != JSColumn.TEXT){
-					// TODO Warn of implied search for non-text columns ?
+					application.output('Numeric column "'+dp+'" not supported for implied search. Search provider skipped. Use explicit syntax instead',LOGGINGLEVEL.WARNING);
 					continue;
 				}
 				
