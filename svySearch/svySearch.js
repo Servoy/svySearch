@@ -3,7 +3,7 @@
  * @private 
  * @properties={typeid:35,uuid:"7B710B9E-E6C8-44F3-8D74-DABD1198F442",variableType:-4}
  */
-var log = scopes.svyLogManager.getLogger('com.servoy.bap.search.SimpleSearch');
+var log = scopes.svyLogManager.getLogger('com.servoy.extensions.search.SimpleSearch');
 
 /**
  * Creates a search object
@@ -415,6 +415,8 @@ function SimpleSearch(dataSource){
 
 		var terms = parse(searchText);
 		var and = q.and;
+		var condition;
+		
 		for(var i in terms){
 			var term = terms[i];
 			
@@ -435,119 +437,13 @@ function SimpleSearch(dataSource){
 					continue;
 				}
 				
-				//	Prepare column metadata
-				var dp = sp.getDataProviderID()
-				var column = parseQBColumn(q,dp);
-				var type = sp.getJSColumn().getType();
-				
-				//	apply substitutions
-				if(term.value){
-					var value = sp.applySubstitutions(term.value);
+				// append condition
+				condition = this.parseCondition(term,sp,q);
+				if(!condition){
+					log.debug('COuld not parse condition. Search provider will be skipped: ' + sp.getAlias());
+					continue;
 				}
-				if(term.valueMax){
-					var valueMax = sp.applySubstitutions(term.valueMax);
-				}
-				
-				//	cast
-				value = sp.cast(value);
-				valueMax = sp.cast(valueMax);
-				
-				//	APPLY Modifiers
-				
-				//	EXCLUDE MODIFIER
-				//	TODO NOT operator causing unexpected results with null values
-				if(term.modifiers.exclude){
-					if(type == JSColumn.TEXT){
-						if(sp.isCaseSensitive()){
-							and = and.add(column.not.like('%'+value+'%'));
-						} else {
-							and = and.add(column.upper.not.like('%'+value.toUpperCase()+'%'));
-						}
-					} else if(type == JSColumn.DATETIME) {
-						/** @type {Date} */
-						var min = value;
-						var max = new Date(min.getTime());
-						max.setHours(23,59,59,999);
-						and = and.add(column.not.between(min,max));
-					} else {
-						and = and.add(column.not.eq(value));
-					}
-					
-				//	EXACT MODIFIER
-				} else if(term.modifiers.exact){
-					if(type == JSColumn.TEXT){
-						if(sp.isCaseSensitive()){
-							and = and.add(column.eq(value));
-						} else {
-							and = and.add(column.upper.eq(value.toUpperCase()));
-						}
-					} else {
-						and = and.add(column.eq(value));
-					}
-				
-				//	GT MODIFIER
-				} else if(term.modifiers.gt){
-					if(type == JSColumn.DATETIME) {
-						/** @type {Date} */
-						min = value;
-						max = new Date(min.getTime());
-						max.setHours(23,59,59,999);
-						and = and.add(column.gt(max));
-					} else {
-						and = and.add(column.gt(value));
-					}
-					
-				// GE MODIFIER
-				} else if(term.modifiers.ge){
-					and = and.add(column.ge(value));
-					
-				// LT MODIFIER
-				} else if(term.modifiers.lt){
-					and = and.add(column.lt(value));
-				
-				// LE MODIFER
-				} else if(term.modifiers.le){
-					if(type == JSColumn.DATETIME) {
-						/** @type {Date} */
-						min = value;
-						max = new Date(min.getTime());
-						max.setHours(23,59,59,999);
-						and = and.add(column.le(max));
-					} else {
-						and = and.add(column.le(value));
-					}
-					
-				//	BETWEEN MODIFIER
-				} else if(terms[i].modifiers.between){
-					if(type == JSColumn.DATETIME) {
-						/** @type {Date} */
-						max = valueMax;
-						max = new Date(max.getTime());
-						max.setHours(23,59,59,999);
-						and = and.add(column.between(value,max));
-					} else {
-						and = and.add(column.between(value,valueMax));
-					}
-					
-				//	NO MODIFER
-				} else {
-					if(type == JSColumn.TEXT){
-						if(sp.isCaseSensitive()){
-							and = and.add(column.like('%'+value+'%'));
-						} else {
-							and = and.add(column.upper.like('%'+value.toUpperCase()+'%'));
-						}
-					} else if(type == JSColumn.DATETIME) {
-						/** @type {Date} */
-						min = value;
-						max = new Date(min.getTime());
-						max.setHours(23,59,59,999);
-						and = and.add(column.between(min,max));
-					} else {
-						and = and.add(column.eq(value));
-					}
-					
-				}
+				and = and.add(condition);
 				continue;
 			}
 			
@@ -557,91 +453,162 @@ function SimpleSearch(dataSource){
 			var or = q.or;
 			for(var j in searchProviders){
 				sp = searchProviders[j];
-				dp = sp.getDataProviderID();
-				column = parseQBColumn(q,dp);
-				value = terms[i].value;
 				
 				//	skip non-implied search
 				if(!sp.isImpliedSearch()){
 					continue;
 				}
-				
-				//	SKIP NON-TEXT types for implied search
-				type = sp.getJSColumn().getType();
-				if(type != JSColumn.TEXT){
-					application.output('Numeric column "'+dp+'" not supported for implied search. Search provider skipped. Use explicit syntax instead',LOGGINGLEVEL.WARNING);
+			
+				// append condition
+				condition = this.parseCondition(term,sp,q);
+				if(!condition){
+					log.debug('COuld not parse condition. Search provider will be skipped: ' + sp.getAlias());
 					continue;
 				}
-				
-				// APPLY SUBSTITUTIONS
-				value = sp.applySubstitutions(value);
-				
-				// APPLY SUBSTITUTIONS
-//				if(value instanceof String){
-//					/** @type {String} */
-//					str = value;
-//					substitutions = sp.getSubstitutions();
-//					for(s in substitutions){
-//						searchMask = substitutions[s].key;
-//						replaceMask = substitutions[s].value
-//						if(!sp.isCaseSensitive()){
-//							str = str.replace(new RegExp(searchMask, "ig"),replaceMask);
-//						} else {
-//							str = utils.stringReplace(str,searchMask,replaceMask);
-//						}
-//					}
-//					value = str;
-//				}
-				
-				//	EXCLUDE MODIFIER
-				if(terms[i].modifiers.exclude){
-					if(sp.isCaseSensitive()){
-						and = and.add(column.not.like('%'+value+'%'));
-					} else {
-						and = and.add(q.or.add(column.upper.not.like('%'+value.toUpperCase()+'%')).add(column.isNull));
-					}
-					
-				//	EXACT MODIFIER
-				} else if(terms[i].modifiers.exact){
-					if(sp.isCaseSensitive()){
-						or = or.add(column.eq(value));
-					} else {
-						or = or.add(column.upper.eq(value.toUpperCase()));
-					}
-					
-				// GT MODIFIER
-				}  else if(terms[i].modifiers.gt){
-					or = or.add(column.gt(value));
-					
-				//	GE MODIFER
-				} else if(terms[i].modifiers.ge){
-					or  = or.add(column.ge(value));
-					
-				//	LT MODIFIER
-				} else if(terms[i].modifiers.lt){
-					or  = or.add(column.lt(value));
-					
-				//	LE MODIFIER
-				} else if(terms[i].modifiers.le){
-					or  = or.add(column.le(value));
-					
-				//	BETWEEN MODIFIER
-				} else if(terms[i].modifiers.between){
-					or = or.add(column.between(terms[i].value,terms[i].valueMax))
-					
-				//	NO MODIFIER
-				} else {
-					if(sp.isCaseSensitive()){
-						or = or.add(column.like('%'+value+'%'));
-					} else {
-						or = or.add(column.upper.like('%'+value.toUpperCase()+'%'));
-					}
-				}
+				or = or.add(condition);
 			}
 			and = and.add(or);
 		}
 		q.where.add(and);
 		return q;
+	}
+	
+	/**
+	 * Parses a condition from a search term
+	 * @protected  
+	 * @param {{field:String,value:String,valueMax:String,quoted:Boolean,modifiers:{exclude:Boolean,exact:Boolean,gt:Boolean,ge:Boolean,lt:Boolean,le:Boolean,between:Boolean}}} term
+	 * @param {SearchProvider} sp
+	 * @param {QBSelect} q
+	 * @return {QBCondition}
+	 */
+	this.parseCondition = function(term, sp, q){
+		
+		// Prepare column metadata
+		var dp = sp.getDataProviderID()
+		var column = parseQBColumn(q,dp);
+		var type = sp.getJSColumn().getType();
+		var value;
+		var valueMax;
+		
+		//	apply substitutions
+		if(term.value){
+			value = sp.applySubstitutions(term.value);
+		}
+		
+		// CAST VALUE
+		value = sp.cast(value);
+		if(value === null){
+			log.debug('Could not cast value for search provider data type');
+			return null;
+		}
+		
+		// HANDLE MAX VALUE
+		if(term.valueMax){
+			valueMax = sp.applySubstitutions(term.valueMax);
+			valueMax = sp.cast(valueMax);
+			if(valueMax == NaN || valueMax == null){
+				log.debug('Could not cast value max for search provider data type');
+				return null;
+			}
+		}
+
+		//	APPLY Modifiers
+		
+		//	EXCLUDE MODIFIER
+		//	TODO NOT operator causing unexpected results with null values
+		if(term.modifiers.exclude){
+			
+			if(type == JSColumn.TEXT){
+				if(sp.isCaseSensitive()){
+					return column.not.like('%'+value+'%');
+				}
+				return column.upper.not.like('%'+value.toUpperCase()+'%');
+			}
+			
+			if(type == JSColumn.DATETIME) {
+				/** @type {Date} */
+				var min = value;
+				var max = new Date(min.getTime());
+				max.setHours(23,59,59,999);
+				return column.not.between(min,max);
+			}
+			return column.not.eq(value);
+		}
+		
+		// EXACT MODIFIER
+		if(term.modifiers.exact){
+			if(type == JSColumn.TEXT){
+				if(sp.isCaseSensitive()){
+					return column.eq(value);
+				}
+				return column.upper.eq(value.toUpperCase());
+			}
+			return column.eq(value);
+		}
+		
+		// GT MODIFIER
+		if(term.modifiers.gt){
+			if(type == JSColumn.DATETIME) {
+				/** @type {Date} */
+				min = value;
+				max = new Date(min.getTime());
+				max.setHours(23,59,59,999);
+				return column.gt(max);
+			}
+			return column.gt(value);
+		}
+		
+		// GE MODIFIER
+		if(term.modifiers.ge){
+			return column.ge(value);
+		}
+		
+		// LT MODIFIER
+		if(term.modifiers.lt){
+			return column.lt(value);
+		}
+		
+		// LE MODIFER
+		if(term.modifiers.le){
+			if(type == JSColumn.DATETIME) {
+				/** @type {Date} */
+				min = value;
+				max = new Date(min.getTime());
+				max.setHours(23,59,59,999);
+				return column.le(max);
+			}
+			return column.le(value);
+		}
+		
+		// BETWEEN MODIFIER
+		if(term.modifiers.between){
+			if(type == JSColumn.DATETIME) {
+				/** @type {Date} */
+				max = valueMax;
+				max = new Date(max.getTime());
+				max.setHours(23,59,59,999);
+				return column.between(value,max);
+			}
+			return column.between(value,valueMax);
+		}
+		
+		// NO MODIFER...
+		
+		if(type == JSColumn.TEXT){
+			if(sp.isCaseSensitive()){
+				return column.like('%'+value+'%');
+			}
+			return column.upper.like('%'+value.toUpperCase()+'%');
+		}
+		
+		if(type == JSColumn.DATETIME) {
+			/** @type {Date} */
+			min = value;
+			max = new Date(min.getTime());
+			max.setHours(23,59,59,999);
+			return column.between(min,max);
+		}
+		return column.eq(value);
 	}
 	
 	/**
@@ -906,17 +873,23 @@ function SimpleSearch(dataSource){
 		 * @return {Date|Number|String} The parsed value
 		 */
 		this.cast = function(value){
-			
+
 			var type = this.getJSColumn().getType();
+			var parsedValue;
 			if(type == JSColumn.DATETIME){
-				return utils.parseDate(value,dateFormat);
+				try{
+					return utils.parseDate(value,dateFormat);
+				}catch(e){
+					return null;
+				}
 			}
-			if(type == JSColumn.INTEGER){
-				return parseInt(value,10);
+			
+			if(type == JSColumn.INTEGER || type == JSColumn.NUMBER){
+				parsedValue = new Number(value);
+				if(isNaN(parsedValue)) return null;
+				return parsedValue;
 			}
-			if(type == JSColumn.NUMBER){
-				return parseFloat(value);
-			}
+			
 			if(type == JSColumn.TEXT){
 				return value;
 			}
