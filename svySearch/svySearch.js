@@ -854,7 +854,7 @@ function SimpleSearch(dataSource){
 			for(var j in keys){
 				
 				//	replace key
-				var searchMask = keys[j];
+				var searchMask = keys[j].replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 				var replaceMask = this.getSubstitutionValue(searchMask);
 				if(!this.isCaseSensitive()){
 					value = value.replace(new RegExp(searchMask, "ig"),replaceMask);
