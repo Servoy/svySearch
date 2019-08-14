@@ -1,4 +1,20 @@
 /**
+ * Constants used for string  matching behavior on individual SearchProviders
+ * 
+ * @public 
+ * @enum 
+ * @see SearchProvider.setStringMatching
+ * @see SearchProvider.getStringMatching
+ * 
+ * @properties={typeid:35,uuid:"5732D489-8FD9-4F08-9A18-9F55181B820D",variableType:-4}
+ */
+var STRING_MATCHING = {
+	CONTAINS : 'contains',
+	STARTS_WITH : 'starts-with',
+	ENDS_WITH : 'ends-with'
+};
+
+/**
  * TODO Implement logging
  * @private 
  * @properties={typeid:35,uuid:"7B710B9E-E6C8-44F3-8D74-DABD1198F442",variableType:-4}
@@ -75,11 +91,15 @@ function parse(searchText){
 		
 		// check for quoted field search, i.e. country:"united states"
 		var index = str.indexOf(value) - 2;
-		if(str.charAt(index) === ':'){
+		var leadingChar = str.charAt(index); 
+		if(leadingChar === ':'){
 			var start = str.lastIndexOf(' ',index);
 			term.field = str.substring(start,index);
 			// remove field from string
 			str = utils.stringReplace(str,term.field+':','');
+		
+		} else if(str.charAt(index) === ''){
+			
 		}
 		
 		// remove value from string
@@ -519,10 +539,25 @@ function SimpleSearch(dataSource){
 		if(term.modifiers.exclude){
 			
 			if(type == JSColumn.TEXT){
-				if(sp.isCaseSensitive()){
-					return column.not.like('%'+value+'%');
+				
+				
+				/** @type {String} */
+				var textValue = value;
+				
+				// CHECK STRING MATCHING MODE
+				var matchMode = sp.getStringMatching();
+				if(matchMode == STRING_MATCHING.STARTS_WITH || matchMode == STRING_MATCHING.CONTAINS){
+					textValue = textValue+'%';
 				}
-				return column.upper.not.like('%'+value.toUpperCase()+'%');
+				if(matchMode == STRING_MATCHING.ENDS_WITH || matchMode == STRING_MATCHING.CONTAINS){
+					textValue = '%'+textValue;
+				}
+				
+				// CHECK CASE-SENSITIVITY
+				if(sp.isCaseSensitive()){
+					return column.not.like(textValue);
+				}
+				return column.upper.not.like(textValue.toUpperCase());
 			}
 			
 			if(type == JSColumn.DATETIME) {
@@ -595,10 +630,22 @@ function SimpleSearch(dataSource){
 		// NO MODIFER...
 		
 		if(type == JSColumn.TEXT){
-			if(sp.isCaseSensitive()){
-				return column.like('%'+value+'%');
+			textValue = value;
+			
+			// CHECK STRING MATCHING MODE
+			matchMode = sp.getStringMatching();
+			if(matchMode == STRING_MATCHING.STARTS_WITH || matchMode == STRING_MATCHING.CONTAINS){
+				textValue = textValue+'%';
 			}
-			return column.upper.like('%'+value.toUpperCase()+'%');
+			if(matchMode == STRING_MATCHING.ENDS_WITH || matchMode == STRING_MATCHING.CONTAINS){
+				textValue = '%'+textValue;
+			}
+			
+			// CHECK CASE-SENSITIVITY
+			if(sp.isCaseSensitive()){
+				return column.like(textValue);
+			}
+			return column.upper.like(textValue.toUpperCase());
 		}
 		
 		if(type == JSColumn.DATETIME) {
@@ -698,6 +745,12 @@ function SimpleSearch(dataSource){
 		 * @protected 
 		 */
 		this.substitutions = {};
+		
+		/**
+		 * @private 
+		 * @type {String}
+		 */
+		var stringMatchingMode = STRING_MATCHING.CONTAINS;
 		
 		/**
 		 * Add a substitution kev-value pair to this search provider
@@ -897,8 +950,37 @@ function SimpleSearch(dataSource){
 			log.warn('SearchProvider ['+this.getDataProviderID()+'] has unsupported column type');
 			return value;
 		}
+		
+		/**
+		 * Sets the string matching mode. Allowed values are [STRING_MATCHING.CONTAINS, STRING_MATCHING.STARTS_WITH, STRING_MATCHING.ENDS_WITH]
+		 * Behavior for this search provider will use the matching mode. SearchProvider instances are initialized with a default of CONTAINS
+		 * @public 
+		 * @param {String} matching The string matching type. Must be one of the constants in STRING_MATCHING enum
+		 * @return {SearchProvider}
+		 * @see STRING_MATCHING
+		 */
+		this.setStringMatching = function(matching){
+			if(!matching) throw 'param "matching" cannot be null/empty';
+			var valid = false;
+			for(var i in STRING_MATCHING){
+				if(STRING_MATCHING[i] == matching){
+					valid = true;
+					break;
+				}
+			}
+			if(!valid) throw 'param "matching" must be one of the values in scopes.svySearch.STRING_MATCHING.XXX';
+			stringMatchingMode = matching;
+			return this;
+		}
+		
+		/**
+		 * @public 
+		 * @return {String} The string mathcing mode used
+		 */
+		this.getStringMatching = function(){
+			return stringMatchingMode;
+		}
 	}
-
 }
 
 /**
