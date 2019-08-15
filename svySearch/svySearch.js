@@ -98,8 +98,10 @@ function parse(searchText){
 			// remove field from string
 			str = utils.stringReplace(str,term.field+':','');
 		
-		} else if(str.charAt(index) === ''){
-			
+		// excluded quoted string, i.e. -"new york"
+		} else if(leadingChar === '-'){
+			term.modifiers.exclude = true;
+			str = str.substring(0, index) + str.substring(index+1, str.length);
 		}
 		
 		// remove value from string
