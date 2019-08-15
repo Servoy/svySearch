@@ -509,7 +509,9 @@ function SimpleSearch(dataSource){
 		var dp = sp.getDataProviderID()
 		var column = parseQBColumn(q,dp);
 		var type = sp.getJSColumn().getType();
+		/** @type {String} */
 		var value;
+		/** @type {String} */
 		var valueMax;
 		
 		//	apply substitutions
