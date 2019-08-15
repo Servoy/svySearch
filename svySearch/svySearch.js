@@ -470,7 +470,7 @@ function SimpleSearch(dataSource){
 			
 			
 			//	implied fields - check all specified data providers
-			var or = q.or;
+			var logical = term.modifiers.exclude ? q.and : q.or;
 			for(var j in searchProviders){
 				sp = searchProviders[j];
 				
@@ -485,9 +485,9 @@ function SimpleSearch(dataSource){
 					log.debug('COuld not parse condition. Search provider will be skipped: ' + sp.getAlias());
 					continue;
 				}
-				or = or.add(condition);
+				logical = logical.add(condition);
 			}
-			and = and.add(or);
+			and = and.add(logical);
 		}
 		q.where.add(and);
 		return q;
