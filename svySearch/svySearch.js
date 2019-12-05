@@ -715,277 +715,276 @@ function SimpleSearch(dataSource){
 		}
 		return this;
 	}
-	
-	/**
-	 * @private 
-	 * @param {SimpleSearch} search
-	 * @param {String} dataProviderID
-	 * @constructor 
-	 * @properties={typeid:24,uuid:"DFA3114F-2B5F-4F21-87B7-01639E8774DD"}
-	 */
-	function SearchProvider(search, dataProviderID){
-		
-		
-		/**
-		 * Alias of data provider
-		 * @private 
-		 * @type {String}
-		 */
-		var a = null;
-		
-		/**
-		 * @private 
-		 * @type {Boolean}
-		 */
-		var implied = true;
-		
-		/**
-		 * @private 
-		 * @type {Boolean}
-		 */
-		var caseSensitive = false;
-		
-		/**
-		 * @protected 
-		 */
-		this.substitutions = {};
-		
-		/**
-		 * @private 
-		 * @type {String}
-		 */
-		var stringMatchingMode = STRING_MATCHING.CONTAINS;
-		
-		/**
-		 * Add a substitution kev-value pair to this search provider
-		 * Substitutions provide replacement capability for user input.
-		 * A typical use case involves parsing a value list display value
-		 * @public 
-		 * @param {String} key A string to be replaced 
-		 * @param {String|Number} value The value to replace it with
-		 * @return {SearchProvider} 
-		 */
-		this.addSubstitution = function(key,value){
-			this.substitutions[key] = value;
-			return this;
-		}
-		
-		/**
-		 * Get all the keys for substitutions
-		 * @public 
-		 * @return {Array<String>}
-		 */
-		this.getSubstitutionsKeys = function(){
-			var keys = [];
-			for(var key in this.substitutions){
-				var value = this.substitutions[key];
-				if(value != null){
-					keys.push(key);
-				}
-			}
-			return keys;
-		}
-		
-		/**
-		 * Get the substitution value for a given key
-		 * @public 
-		 * @param {String} key The substitution key
-		 * @return {String}
-		 */
-		this.getSubstitutionValue = function(key){
-			var value = this.substitutions[key];
-			return value;
-		}
-		
-		/**
-		 * Gets the data provider ID
-		 * @public 
-		 * @return {String} The data provider which will be searched
-		 */
-		this.getDataProviderID = function(){
-			return dataProviderID;
-		}
-		
-		/**
-		 * Sets the natural language name for this SearchProvider
-		 * The alias can be used in explicit searches
-		 * TODO Support multiple aliases ?
-		 * @public 
-		 * @param {String} alias The alias
-		 * @return {SearchProvider}
-		 */
-		this.setAlias = function(alias){
-			a = alias;	// TODO: Validate input for spaces & special chars
-			return this;
-		}
-		
-		/**
-		 * Gets the alias of this search provider. 
-		 * @public 
-		 * @return {String} The alias, or null if none was specified
-		 */
-		this.getAlias = function(){
-			return a;
-		}
-		
-		/**
-		 * 
-		 * Specifies if this search provider is included in implied search
-		 * A value of true indicates that the provider will always be searched
-		 * A value of false indicates that provider will ONLY be searched when used in explicit field matching
-		 *  
-		 * @public 
-		 * @param {Boolean} b
-		 * @return {SearchProvider}
-		 */
-		this.setImpliedSearch = function(b){
-			implied = b;
-			return this;
-		}
-		
-		/**
-		 * Indicates if this SearchProvider is an implied search
-		 * @public 
-		 * @return {Boolean}
-		 */
-		this.isImpliedSearch = function(){
-			return implied;
-		}
-		
-		/**
-		 * Specifies if this SearchProvider will perform case-sensitive searches
-		 * @public 
-		 * @param {Boolean} b
-		 * @return {SearchProvider}
-		 */
-		this.setCaseSensitive = function(b){
-			caseSensitive = b;
-			return this;
-		}
-		
-		/**
-		 * Indicates if this SearchProvider is case-sensitive
-		 * @public 
-		 * @return {Boolean}
-		 */
-		this.isCaseSensitive = function(){
-			return caseSensitive;
-		}
-		
-		/**
-		 * Get the JSColumn object that corresponds to this search provider
-		 * @public 
-		 * @return {JSColumn}
-		 */
-		this.getJSColumn = function(){
-			var jsColumn = parseJSColumnInfo(search.getDataSource(),dataProviderID);
-			return !jsColumn ? null : jsColumn.column;
-		}
-		
-		/**
-		 * Get the JSTable object that corresponds to this search provider
-		 * 
-		 * @public 
-		 * @return {JSTable}
-		 */
-		this.getJSTable = function(){
-			var jsColumn = parseJSColumnInfo(search.getDataSource(),dataProviderID);
-			return !jsColumn ? null : jsColumn.table;
-		}
-		
-		/**
-		 * Apply defined substitutions to a given string 
-		 * @public 
-		 * @param {String} value The value for which substitutions will be applied
-		 * @return {String} the value after substitutions
-		 */
-		this.applySubstitutions = function(value){
-			
-			//	get all keys. Sort them so based on string length descending to avoid one key replacing part of another
-			var keys = this.getSubstitutionsKeys().sort(function(s1,s2){
-				if(s1.length > s2.length) return -1;
-				if(s1.length < s2.length) return 1;
-				return 0;
-			});
-			
-			for(var j in keys){
-				
-				//	replace key
-				var searchMask = keys[j].replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-				var replaceMask = this.getSubstitutionValue(searchMask);
-				if(!this.isCaseSensitive()){
-					value = value.replace(new RegExp(searchMask, "ig"),replaceMask);
-				} else {
-					value = utils.stringReplace(value,searchMask,replaceMask);
-				}
-			}
-			return value;
-		}
-		
-		/**
-		 * Casts a given string into a value compatible with the search provider's data type
-		 * 
-		 * @public  
-		 * @param {String} value The value to be parsed
-		 * @return {Date|Number|String} The parsed value
-		 */
-		this.cast = function(value){
+}
 
-			var type = this.getJSColumn().getType();
-			var parsedValue;
-			if(type == JSColumn.DATETIME){
-				try{
-					return utils.parseDate(value,dateFormat);
-				}catch(e){
-					return null;
-				}
+/**
+ * @private
+ * @param {SimpleSearch} search
+ * @param {String} dataProviderID
+ * @constructor
+ * @properties={typeid:24,uuid:"DFA3114F-2B5F-4F21-87B7-01639E8774DD"}
+ */
+function SearchProvider(search, dataProviderID) {
+
+	/**
+	 * Alias of data provider
+	 * @private
+	 * @type {String}
+	 */
+	var a = null;
+
+	/**
+	 * @private
+	 * @type {Boolean}
+	 */
+	var implied = true;
+
+	/**
+	 * @private
+	 * @type {Boolean}
+	 */
+	var caseSensitive = false;
+
+	/**
+	 * @protected
+	 */
+	this.substitutions = { };
+
+	/**
+	 * @private
+	 * @type {String}
+	 */
+	var stringMatchingMode = STRING_MATCHING.CONTAINS;
+
+	/**
+	 * Add a substitution kev-value pair to this search provider
+	 * Substitutions provide replacement capability for user input.
+	 * A typical use case involves parsing a value list display value
+	 * @public
+	 * @param {String} key A string to be replaced
+	 * @param {String|Number} value The value to replace it with
+	 * @return {SearchProvider}
+	 */
+	this.addSubstitution = function(key, value) {
+		this.substitutions[key] = value;
+		return this;
+	}
+
+	/**
+	 * Get all the keys for substitutions
+	 * @public
+	 * @return {Array<String>}
+	 */
+	this.getSubstitutionsKeys = function() {
+		var keys = [];
+		for (var key in this.substitutions) {
+			var value = this.substitutions[key];
+			if (value != null) {
+				keys.push(key);
 			}
-			
-			if(type == JSColumn.INTEGER || type == JSColumn.NUMBER){
-				parsedValue = new Number(value);
-				if(isNaN(parsedValue)) return null;
-				return parsedValue;
+		}
+		return keys;
+	}
+
+	/**
+	 * Get the substitution value for a given key
+	 * @public
+	 * @param {String} key The substitution key
+	 * @return {String}
+	 */
+	this.getSubstitutionValue = function(key) {
+		var value = this.substitutions[key];
+		return value;
+	}
+
+	/**
+	 * Gets the data provider ID
+	 * @public
+	 * @return {String} The data provider which will be searched
+	 */
+	this.getDataProviderID = function() {
+		return dataProviderID;
+	}
+
+	/**
+	 * Sets the natural language name for this SearchProvider
+	 * The alias can be used in explicit searches
+	 * TODO Support multiple aliases ?
+	 * @public
+	 * @param {String} alias The alias
+	 * @return {SearchProvider}
+	 */
+	this.setAlias = function(alias) {
+		a = alias; // TODO: Validate input for spaces & special chars
+		return this;
+	}
+
+	/**
+	 * Gets the alias of this search provider.
+	 * @public
+	 * @return {String} The alias, or null if none was specified
+	 */
+	this.getAlias = function() {
+		return a;
+	}
+
+	/**
+	 *
+	 * Specifies if this search provider is included in implied search
+	 * A value of true indicates that the provider will always be searched
+	 * A value of false indicates that provider will ONLY be searched when used in explicit field matching
+	 *
+	 * @public
+	 * @param {Boolean} b
+	 * @return {SearchProvider}
+	 */
+	this.setImpliedSearch = function(b) {
+		implied = b;
+		return this;
+	}
+
+	/**
+	 * Indicates if this SearchProvider is an implied search
+	 * @public
+	 * @return {Boolean}
+	 */
+	this.isImpliedSearch = function() {
+		return implied;
+	}
+
+	/**
+	 * Specifies if this SearchProvider will perform case-sensitive searches
+	 * @public
+	 * @param {Boolean} b
+	 * @return {SearchProvider}
+	 */
+	this.setCaseSensitive = function(b) {
+		caseSensitive = b;
+		return this;
+	}
+
+	/**
+	 * Indicates if this SearchProvider is case-sensitive
+	 * @public
+	 * @return {Boolean}
+	 */
+	this.isCaseSensitive = function() {
+		return caseSensitive;
+	}
+
+	/**
+	 * Get the JSColumn object that corresponds to this search provider
+	 * @public
+	 * @return {JSColumn}
+	 */
+	this.getJSColumn = function() {
+		var jsColumn = parseJSColumnInfo(search.getDataSource(), dataProviderID);
+		return !jsColumn ? null : jsColumn.column;
+	}
+
+	/**
+	 * Get the JSTable object that corresponds to this search provider
+	 *
+	 * @public
+	 * @return {JSTable}
+	 */
+	this.getJSTable = function() {
+		var jsColumn = parseJSColumnInfo(search.getDataSource(), dataProviderID);
+		return !jsColumn ? null : jsColumn.table;
+	}
+
+	/**
+	 * Apply defined substitutions to a given string
+	 * @public
+	 * @param {String} value The value for which substitutions will be applied
+	 * @return {String} the value after substitutions
+	 */
+	this.applySubstitutions = function(value) {
+
+		//	get all keys. Sort them so based on string length descending to avoid one key replacing part of another
+		var keys = this.getSubstitutionsKeys().sort(function(s1, s2) {
+			if (s1.length > s2.length) return -1;
+			if (s1.length < s2.length) return 1;
+			return 0;
+		});
+
+		for (var j in keys) {
+
+			//	replace key
+			var searchMask = keys[j].replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+			var replaceMask = this.getSubstitutionValue(searchMask);
+			if (!this.isCaseSensitive()) {
+				value = value.replace(new RegExp(searchMask, "ig"), replaceMask);
+			} else {
+				value = utils.stringReplace(value, searchMask, replaceMask);
 			}
-			
-			if(type == JSColumn.TEXT){
-				return value;
+		}
+		return value;
+	}
+
+	/**
+	 * Casts a given string into a value compatible with the search provider's data type
+	 *
+	 * @public
+	 * @param {String} value The value to be parsed
+	 * @return {Date|Number|String} The parsed value
+	 */
+	this.cast = function(value) {
+		var type = this.getJSColumn().getType();
+		var parsedValue;
+		if (type == JSColumn.DATETIME) {
+			try {
+				return utils.parseDate(value, search.getDateFormat());
+			} catch (e) {
+				return null;
 			}
-			
-			log.warn('SearchProvider ['+this.getDataProviderID()+'] has unsupported column type');
+		}
+
+		if (type == JSColumn.INTEGER || type == JSColumn.NUMBER) {
+			parsedValue = new Number(value);
+			if (isNaN(parsedValue)) return null;
+			return parsedValue;
+		}
+
+		if (type == JSColumn.TEXT) {
 			return value;
 		}
-		
-		/**
-		 * Sets the string matching mode. Allowed values are [STRING_MATCHING.CONTAINS, STRING_MATCHING.STARTS_WITH, STRING_MATCHING.ENDS_WITH]
-		 * Behavior for this search provider will use the matching mode. SearchProvider instances are initialized with a default of CONTAINS
-		 * @public 
-		 * @param {String} matching The string matching type. Must be one of the constants in STRING_MATCHING enum
-		 * @return {SearchProvider}
-		 * @see STRING_MATCHING
-		 */
-		this.setStringMatching = function(matching){
-			if(!matching) throw 'param "matching" cannot be null/empty';
-			var valid = false;
-			for(var i in STRING_MATCHING){
-				if(STRING_MATCHING[i] == matching){
-					valid = true;
-					break;
-				}
+
+		log.warn('SearchProvider [' + this.getDataProviderID() + '] has unsupported column type');
+		return value;
+	}
+
+	/**
+	 * Sets the string matching mode. Allowed values are [STRING_MATCHING.CONTAINS, STRING_MATCHING.STARTS_WITH, STRING_MATCHING.ENDS_WITH]
+	 * Behavior for this search provider will use the matching mode. SearchProvider instances are initialized with a default of CONTAINS
+	 * @public
+	 * @param {String} matching The string matching type. Must be one of the constants in STRING_MATCHING enum
+	 * @return {SearchProvider}
+	 * @see STRING_MATCHING
+	 */
+	this.setStringMatching = function(matching) {
+		if (!matching) throw 'param "matching" cannot be null/empty';
+		var valid = false;
+		for (var i in STRING_MATCHING) {
+			if (STRING_MATCHING[i] == matching) {
+				valid = true;
+				break;
 			}
-			if(!valid) throw 'param "matching" must be one of the values in scopes.svySearch.STRING_MATCHING.XXX';
-			stringMatchingMode = matching;
-			return this;
 		}
-		
-		/**
-		 * @public 
-		 * @return {String} The string mathcing mode used
-		 */
-		this.getStringMatching = function(){
-			return stringMatchingMode;
-		}
+		if (!valid) throw 'param "matching" must be one of the values in scopes.svySearch.STRING_MATCHING.XXX';
+		stringMatchingMode = matching;
+		return this;
+	}
+
+	/**
+	 * @public
+	 * @return {String} The string mathcing mode used
+	 */
+	this.getStringMatching = function() {
+		return stringMatchingMode;
 	}
 }
+
 
 /**
  * TODO Possibly move to svyUtils module
