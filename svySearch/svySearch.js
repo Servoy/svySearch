@@ -234,7 +234,7 @@ function parseModifiers(term){
 
 /**
  * Constructor for SimpleSearch (Use factory methods instead)
- * @private 
+ * @protected  
  * @constructor 
  * @param {String} dataSource
  *
@@ -718,7 +718,7 @@ function SimpleSearch(dataSource){
 }
 
 /**
- * @private
+ * @protected 
  * @param {SimpleSearch} search
  * @param {String} dataProviderID
  * @constructor
