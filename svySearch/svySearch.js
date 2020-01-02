@@ -1,4 +1,12 @@
 /**
+ * @private 
+ * @type {String}
+ *
+ * @properties={typeid:35,uuid:"C65AA789-5101-4B59-848F-839F3E979ED5"}
+ */
+var SVY_SEARCH_VERSION = '1.2.2';
+
+/**
  * Constants used for string  matching behavior on individual SearchProviders
  * 
  * @public 
@@ -985,6 +993,15 @@ function SearchProvider(search, dataProviderID) {
 	}
 }
 
+/**
+ * Gets the version of this module
+ * @public 
+ * @return {String} the version of the module using the format Major.Minor.Revision
+ * @properties={typeid:24,uuid:"3CD7D454-23F4-48A3-BE8C-61C302CC5D67"}
+ */
+function getVersion() {
+    return SVY_SEARCH_VERSION;
+}
 
 /**
  * TODO Possibly move to svyUtils module
