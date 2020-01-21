@@ -308,7 +308,7 @@ function SimpleSearch(dataSource){
 	 * @param {Boolean} [impliedSearch] Set this false to indicate that a provider is not searchable unless explicitly referenced
 	 * @param {Boolean} [caseSensitive] Set this to be true to force case-sensitive search on this search provider
 	 * 
-	 * @return {SearchProvider}
+	 * @return {SearchProvider} the Search Provider added or null if the dataProviderID could not be found
 	 * 
 	 * @example <pre>
 	 * simpleSearch.addSearchProvider('orderdate', 'date', false, false);
@@ -317,6 +317,12 @@ function SimpleSearch(dataSource){
 	 */
 	this.addSearchProvider = function(dataProviderID, alias, impliedSearch, caseSensitive){
 		var sp;
+		
+		var jsColumnInfo = parseJSColumnInfo(this.getDataSource(), dataProviderID);
+		if (!jsColumnInfo) {
+			log.warn('Search Provider cannot be added, because no column was found for: dataSource=' + this.getDataSource() + ', dataProvider=' + dataProviderID);
+			return null;
+		}
 		
 		// check if alias or data provider was already added
 		var spExists = false;
