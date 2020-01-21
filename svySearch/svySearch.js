@@ -62,7 +62,7 @@ function createSimpleSearch(dataSource){
 function parse(searchText){
 	
 	// copy searchText to overwrite
-	var str = searchText;
+	var str = searchText == null ? '' : searchText;
 	
 	/**
 	 * terms that will be parsed 
@@ -78,77 +78,77 @@ function parse(searchText){
 	
 	//	parse quoted terms
 	var quotedStrings = parseEnclosedStrings(str);
-	for(var i in quotedStrings){
+	for (var i in quotedStrings) {
 		var value = quotedStrings[i];
 		var term = {
-			value:value,
-			modifiers:{
-				exact:false,
-				exclude:false,
-				gt:false,
-				ge:false,
-				lt:false,
-				le:false,
-				between:false
+			value: value,
+			modifiers: {
+				exact: false,
+				exclude: false,
+				gt: false,
+				ge: false,
+				lt: false,
+				le: false,
+				between: false
 			},
-			field:null,
-			valueMax:null,
-			quoted:true,
-			ignored:false
+			field: null,
+			valueMax: null,
+			quoted: true,
+			ignored: false
 		};
-		
+
 		// check for quoted field search, i.e. country:"united states"
 		var index = str.indexOf(value) - 2;
-		var leadingChar = str.charAt(index); 
-		if(leadingChar === ':'){
-			var start = str.lastIndexOf(' ',index);
-			term.field = str.substring(start,index);
+		var leadingChar = str.charAt(index);
+		if (leadingChar === ':') {
+			var start = str.lastIndexOf(' ', index);
+			term.field = str.substring(start, index);
 			// remove field from string
-			str = utils.stringReplace(str,term.field+':','');
-		
-		// excluded quoted string, i.e. -"new york"
-		} else if(leadingChar === '-'){
+			str = utils.stringReplace(str, term.field + ':', '');
+
+			// excluded quoted string, i.e. -"new york"
+		} else if (leadingChar === '-') {
 			term.modifiers.exclude = true;
-			str = str.substring(0, index) + str.substring(index+1, str.length);
+			str = str.substring(0, index) + str.substring(index + 1, str.length);
 		}
-		
+
 		// remove value from string
-		str = utils.stringReplace(str,'"'+value+'"','');
-		
+		str = utils.stringReplace(str, '"' + value + '"', '');
+
 		// add term
 		terms.push(term);
 	}
 	
 	// parse unquoted strings
 	var unquotedStrings = str.split(' ');
-	for(i in unquotedStrings){
+	for (i in unquotedStrings) {
 		var s = utils.stringTrim(unquotedStrings[i]);
-		if(!s){
+		if (!s) {
 			continue;
 		}
-		
+
 		terms.push({
-			value:s,
-			modifiers:{
-				exact:false,
-				exclude:false,
-				gt:false,
-				ge:false,
-				lt:false,
-				le:false,
-				between:false
+			value: s,
+			modifiers: {
+				exact: false,
+				exclude: false,
+				gt: false,
+				ge: false,
+				lt: false,
+				le: false,
+				between: false
 			},
-			field:null,
-			valueMax:null,
-			quoted:false
+			field: null,
+			valueMax: null,
+			quoted: false
 		});
 	}
 	
-	for(i in terms){
+	for (i in terms) {
 		term = terms[i];
 		parseField(term);
 		parseModifiers(term);
-		
+
 	}
 	return terms;
 }
