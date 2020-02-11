@@ -684,7 +684,7 @@ function SimpleSearch(dataSource){
 	 * @return {JSDataSet}
 	 */
 	this.getDataSet = function(maxRows){
-		return databaseManager.getDataSetByQuery(this.getQuery(),maxRows)
+		return databaseManager.getDataSetByQuery(this.getQuery(), maxRows > 0 ? maxRows : -1);
 	}
 	
 	/**
