@@ -4,7 +4,7 @@
  *
  * @properties={typeid:35,uuid:"C65AA789-5101-4B59-848F-839F3E979ED5"}
  */
-var SVY_SEARCH_VERSION = '1.2.2';
+var SVY_SEARCH_VERSION = '1.2.3';
 
 /**
  * Constants used for string  matching behavior on individual SearchProviders
