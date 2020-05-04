@@ -448,8 +448,13 @@ function SimpleSearch(dataSource){
 		
 		var q = databaseManager.createSelect(dataSource);
 		q.result.addPk();
-
-		var terms = parse(searchText);
+		
+		try {
+			var terms = parse(searchText);
+		} catch (e) {
+			//TODO: This can fail with an error when dealing with global valuelists (Check why) 
+		}
+		
 		var and = q.and;
 		var condition;
 		
