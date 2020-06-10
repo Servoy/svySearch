@@ -527,7 +527,9 @@ function SimpleSearch(dataSource){
 		// Prepare column metadata
 		var dp = sp.getDataProviderID()
 		var column = parseQBColumn(q, dp);
-		var type = sp.getJSColumn().getType();
+		var jsColumn = sp.getJSColumn();
+		var type = jsColumn.getType();
+		var columnLength = jsColumn.getLength();
 		/** @type {String} */
 		var value;
 		/** @type {String} */
@@ -575,6 +577,31 @@ function SimpleSearch(dataSource){
 					textValue = '%' + textValue;
 				}
 				
+				// Check column length to avoid unnecessary queries and possible DB errors
+				if (columnLength > 0 && matchMode == STRING_MATCHING.CONTAINS && textValue.length === columnLength + 2) {
+					// searching for e.g. %12345% on a column with length 5; there can be no like match, so doing exact search
+					if (sp.isCaseSensitive()) {
+						return column.upper.not.eq(value.toUpperCase());
+					} else {
+						return column.not.eq(value);
+					}
+				} else if (columnLength > 0 && matchMode == STRING_MATCHING.CONTAINS && textValue.length == columnLength + 1) {
+					// searching for e.g. %1234% on a column with length 5
+					// that could be a problem for DBs that do not accept search parameters longer than the column
+					// turning that specific case into an extra AND
+					if (sp.isCaseSensitive()) {
+						return q.and.add(column.upper.not.like(value.toUpperCase() + '%')).add(column.upper.not.like('%' + value.toUpperCase()));
+					} else {
+						return q.and.add(column.not.like(value + '%')).add(column.not.like('%' + value));
+					}
+				}
+				
+				if (columnLength > 0 && textValue.length > columnLength) {
+					// value does not fit in column and cannot be found
+					log.debug('Search value longer than column ' + dp);
+					return null;
+				}
+
 				// CHECK CASE-SENSITIVITY
 				if (sp.isCaseSensitive()) {
 					return column.not.like(textValue);
@@ -592,6 +619,18 @@ function SimpleSearch(dataSource){
 			return column.not.eq(value);
 		}
 		
+		// Check column length to avoid unnecessary queries and possible DB errors
+		if (type === JSColumn.TEXT && columnLength > 0) {
+			if (value.length > columnLength) {
+				// value does not fit in column and cannot be found
+				log.debug('Search value longer than column ' + dp);
+				return null;
+			} else if (term.modifiers.between && valueMax && valueMax.length > columnLength) {
+				// max value for between search larger than the column; turn this into a >= query
+				term.modifiers.ge = true;
+			}
+		}
+
 		// EXACT MODIFIER
 		if (term.modifiers.exact) {
 			if (type == JSColumn.TEXT) {
@@ -662,6 +701,24 @@ function SimpleSearch(dataSource){
 				textValue = '%' + textValue;
 			}
 			
+			if (columnLength > 0 && matchMode == STRING_MATCHING.CONTAINS && textValue.length === columnLength + 2) {
+				// searching for %12345% on a column with length 5; there can be no like match, so doing exact search
+				if (sp.isCaseSensitive()) {
+					return column.upper.eq(value.toUpperCase());
+				} else {
+					return column.eq(value);
+				}
+			} else if (columnLength > 0 && matchMode == STRING_MATCHING.CONTAINS && textValue.length == columnLength + 1) {
+				// searching for %1234% on a column with length 5
+				// that could be a problem for DBs that do not accept search parameters longer than the column
+				// turning that specific case into an extra OR
+				if (sp.isCaseSensitive()) {
+					return q.or.add(column.upper.like(value.toUpperCase() + '%')).add(column.upper.like('%' + value.toUpperCase()));
+				} else {
+					return q.or.add(column.like(value + '%')).add(column.like('%' + value));
+				}
+			}
+
 			// CHECK CASE-SENSITIVITY
 			if (sp.isCaseSensitive()) {
 				return column.like(textValue);
