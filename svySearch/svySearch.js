@@ -37,14 +37,15 @@ var log = scopes.svyLogManager.getLogger('com.servoy.extensions.search.SimpleSea
  * @return {SimpleSearch}
  * @properties={typeid:24,uuid:"BCC9AB14-EA27-4000-8F45-72A9F4A17159"}
  */
-function createSimpleSearch(dataSource){
+function createSimpleSearch(dataSource) {
 	/** @type {String} */
 	var ds = dataSource;
-	if(dataSource instanceof JSRecord || dataSource instanceof JSFoundSet){
+	if (dataSource instanceof JSRecord || dataSource instanceof JSFoundSet) {
 		ds = dataSource.getDataSource();
 	}
 	return new SimpleSearch(ds);
 }
+
 
 /**
  * @private  
@@ -148,8 +149,8 @@ function parse(searchText){
 		term = terms[i];
 		parseField(term);
 		parseModifiers(term);
-
 	}
+	
 	return terms;
 }
 
@@ -170,26 +171,27 @@ function parse(searchText){
  *
  * @properties={typeid:24,uuid:"CD125763-4A68-4C3F-93D3-F8029CD16F5E"}
  */
-function parseField(term){
-	
+function parseField(term) {
 	// skip if quoted string
-	if(!term.quoted){
-		
+	if (!term.quoted) {
+
 		// parse field name
 		var info = term.value.split(':');
-		if(info.length > 1){
+		if (info.length > 1) {
 			term.field = info[0]
 			term.value = info[1];
-			
+
 			// empty value, i.e. "field:"
-			if(!term.value.length){
+			if (!term.value.length) {
 				log.warn('Parsed term with empty value for field: ' + term.field + ':' + term.value);
 			}
 		}
 	}
-	
+
 	return term;
 }
+
+
 
 /**
  * @private 
@@ -206,32 +208,31 @@ function parseField(term){
  *
  * @properties={typeid:24,uuid:"0AE587E6-4D24-4868-863A-9EC7DF5EA5F4"}
  */
-function parseModifiers(term){
-	
+function parseModifiers(term) {
 	var mod = term.value.charAt(0);
-	if(mod == '-'){
+	if (mod == '-') {
 		term.modifiers.exclude = true;
 		term.value = term.value.substr(1);
-	} else if(mod == '+'){
+	} else if (mod == '+') {
 		term.modifiers.exact = true;
 		term.value = term.value.substr(1);
-	} else if(mod == '>'){
-		if(term.value.charAt(1) == '='){
+	} else if (mod == '>') {
+		if (term.value.charAt(1) == '=') {
 			term.modifiers.ge = true;
 			term.value = term.value.substr(1);
 		} else {
 			term.modifiers.gt = true;
 		}
 		term.value = term.value.substr(1);
-	} else if(mod == '<'){
-		if(term.value.charAt(1) == '='){
+	} else if (mod == '<') {
+		if (term.value.charAt(1) == '=') {
 			term.modifiers.le = true;
 			term.value = term.value.substr(1);
 		} else {
 			term.modifiers.lt = true;
 		}
 		term.value = term.value.substr(1);
-	} else if(term.value.indexOf('...') != -1){
+	} else if (term.value.indexOf('...') != -1) {
 		term.modifiers.between = true;
 		var values = term.value.split('...');
 		term.value = values[0];
@@ -315,49 +316,49 @@ function SimpleSearch(dataSource){
 	 * </pre>
 	 * 
 	 */
-	this.addSearchProvider = function(dataProviderID, alias, impliedSearch, caseSensitive){
+	this.addSearchProvider = function(dataProviderID, alias, impliedSearch, caseSensitive) {
 		var sp;
-		
+
 		var jsColumnInfo = parseJSColumnInfo(this.getDataSource(), dataProviderID);
 		if (!jsColumnInfo) {
 			log.warn('Search Provider cannot be added, because no column was found for: dataSource=' + this.getDataSource() + ', dataProvider=' + dataProviderID);
 			return null;
 		}
-		
+
 		// check if alias or data provider was already added
 		var spExists = false;
-		for(var i in searchProviders){
-			if(searchProviders[i].getDataProviderID() == dataProviderID){
+		for (var i in searchProviders) {
+			if (searchProviders[i].getDataProviderID() == dataProviderID) {
 				log.warn('Search Provider already added for: ' + dataProviderID + ' and will be updated.');
 				spExists = true;
 				sp = searchProviders[i];
 				break;
 			}
 		}
-		
+
 		//	 search provider is new
-		if(!spExists){
-			
+		if (!spExists) {
+
 			// check if relations is x-db (not supported)
-			if(dataProviderHasXDBRelation(dataProviderID)){
+			if (dataProviderHasXDBRelation(dataProviderID)) {
 				throw new scopes.svyExceptions.IllegalArgumentException('Cross-DB relation found and is not supported. Search provider will not be added');
 			}
-			
-			sp = new SearchProvider(this,dataProviderID);
+
+			sp = new SearchProvider(this, dataProviderID);
 			searchProviders.push(sp);
 		}
-		
+
 		// update SP
-		if(alias){
+		if (alias) {
 			sp.setAlias(alias);
 		}
-		if(impliedSearch instanceof Boolean){
+		if (impliedSearch instanceof Boolean) {
 			sp.setImpliedSearch(impliedSearch);
 		}
-		if(caseSensitive instanceof Boolean){
+		if (caseSensitive instanceof Boolean) {
 			sp.setCaseSensitive(caseSensitive);
 		}
-		
+
 		return sp;
 	}
 	
@@ -444,66 +445,65 @@ function SimpleSearch(dataSource){
 	 * @public 
 	 * @return {QBSelect}
 	 */
-	this.getQuery = function(){
-		
+	this.getQuery = function() {
+
 		var q = databaseManager.createSelect(dataSource);
 		q.result.addPk();
-		
+
 		try {
 			var terms = parse(searchText);
 		} catch (e) {
-			//TODO: This can fail with an error when dealing with global valuelists (Check why) 
+			//TODO: This can fail with an error when dealing with global valuelists (Check why)
+			log.error('Error parsing search text', e);
 		}
 		
 		var and = q.and;
 		var condition;
-		
-		for(var i in terms){
+
+		for (var i in terms) {
 			var term = terms[i];
-			
+
 			//	fielded search i.e. company_name:servoy
-			if(term.field){
-				
+			if (term.field) {
+
 				//	get SearchProvider
 				var alias = term.field;
 				var sp = this.getSearchProvider(alias);
-				if(!sp){
+				if (!sp) {
 					log.warn('Search alias not found: ' + alias + '. Search term will be ignored');
 					continue;
 				}
-				
+
 				// check for empty field value
-				if(!term.value){
-					log.warn('Explicit search term for field ['+term.field+'] contains no value. Search term will be ignored.')
+				if (!term.value) {
+					log.warn('Explicit search term for field [' + term.field + '] contains no value. Search term will be ignored.')
 					continue;
 				}
-				
+
 				// append condition
-				condition = this.parseCondition(term,sp,q);
-				if(!condition){
-					log.debug('COuld not parse condition. Search provider will be skipped: ' + sp.getAlias());
+				condition = this.parseCondition(term, sp, q);
+				if (!condition) {
+					log.debug('Search provider with alias [' + sp.getAlias() + '] will be skipped for value "' + term.value + '"');
 					continue;
 				}
 				and = and.add(condition);
 				continue;
 			}
-			
-			
-			
-			//	implied fields - check all specified data providers
+
+			// implied fields - check all specified data providers
 			var logical = term.modifiers.exclude ? q.and : q.or;
-			for(var j in searchProviders){
+			for (var j in searchProviders) {
 				sp = searchProviders[j];
-				
-				//	skip non-implied search
-				if(!sp.isImpliedSearch()){
+
+				// skip non-implied search
+				if (!sp.isImpliedSearch()) {
 					continue;
 				}
-			
+
 				// append condition
-				condition = this.parseCondition(term,sp,q);
-				if(!condition){
-					log.debug('COuld not parse condition. Search provider will be skipped: ' + sp.getAlias());
+				condition = this.parseCondition(term, sp, q);
+				if (!condition) {
+					log.debug('Search provider [' + sp.getDataProviderID() + '] will be skipped for value "' + term.value + '"');
 					continue;
 				}
 				logical = logical.add(condition);
@@ -522,161 +522,159 @@ function SimpleSearch(dataSource){
 	 * @param {QBSelect} q
 	 * @return {QBCondition}
 	 */
-	this.parseCondition = function(term, sp, q){
-		
+	this.parseCondition = function(term, sp, q) {
+
 		// Prepare column metadata
 		var dp = sp.getDataProviderID()
-		var column = parseQBColumn(q,dp);
+		var column = parseQBColumn(q, dp);
 		var type = sp.getJSColumn().getType();
 		/** @type {String} */
 		var value;
 		/** @type {String} */
 		var valueMax;
-		
-		//	apply substitutions
-		if(term.value){
+
+		// apply substitutions
+		if (term.value) {
 			value = sp.applySubstitutions(term.value);
 		}
-		
+
 		// CAST VALUE
 		value = sp.cast(value);
-		if(value === null){
-			log.debug('Could not cast value for search provider data type');
+		if (value === null) {
+			log.debug('Could not cast value for search provider data type for dataprovider ' + dp);
 			return null;
 		}
-		
+
 		// HANDLE MAX VALUE
-		if(term.valueMax){
+		if (term.valueMax) {
 			valueMax = sp.applySubstitutions(term.valueMax);
 			valueMax = sp.cast(valueMax);
-			if(valueMax == NaN || valueMax == null){
-				log.debug('Could not cast value max for search provider data type');
+			if (valueMax == NaN || valueMax == null) {
+				log.debug('Could not cast value max for search provider data type for dataprovider ' + dp);
 				return null;
 			}
 		}
 
 		//	APPLY Modifiers
-		
+
 		//	EXCLUDE MODIFIER
 		//	TODO NOT operator causing unexpected results with null values
-		if(term.modifiers.exclude){
-			
-			if(type == JSColumn.TEXT){
-				
-				
+		if (term.modifiers.exclude) {
+
+			if (type == JSColumn.TEXT) {
+
 				/** @type {String} */
 				var textValue = value;
-				
+
 				// CHECK STRING MATCHING MODE
 				var matchMode = sp.getStringMatching();
-				if(matchMode == STRING_MATCHING.STARTS_WITH || matchMode == STRING_MATCHING.CONTAINS){
-					textValue = textValue+'%';
+				if (matchMode == STRING_MATCHING.STARTS_WITH || matchMode == STRING_MATCHING.CONTAINS) {
+					textValue = textValue + '%';
 				}
-				if(matchMode == STRING_MATCHING.ENDS_WITH || matchMode == STRING_MATCHING.CONTAINS){
-					textValue = '%'+textValue;
+				if (matchMode == STRING_MATCHING.ENDS_WITH || matchMode == STRING_MATCHING.CONTAINS) {
+					textValue = '%' + textValue;
 				}
 				
 				// CHECK CASE-SENSITIVITY
-				if(sp.isCaseSensitive()){
+				if (sp.isCaseSensitive()) {
 					return column.not.like(textValue);
 				}
 				return column.upper.not.like(textValue.toUpperCase());
 			}
-			
-			if(type == JSColumn.DATETIME) {
+
+			if (type == JSColumn.DATETIME) {
 				/** @type {Date} */
 				var min = value;
 				var max = new Date(min.getTime());
-				max.setHours(23,59,59,999);
-				return column.not.between(min,max);
+				max.setHours(23, 59, 59, 999);
+				return column.not.between(min, max);
 			}
 			return column.not.eq(value);
 		}
 		
 		// EXACT MODIFIER
-		if(term.modifiers.exact){
-			if(type == JSColumn.TEXT){
-				if(sp.isCaseSensitive()){
+		if (term.modifiers.exact) {
+			if (type == JSColumn.TEXT) {
+				if (sp.isCaseSensitive()) {
 					return column.eq(value);
 				}
 				return column.upper.eq(value.toUpperCase());
 			}
 			return column.eq(value);
 		}
-		
+
 		// GT MODIFIER
-		if(term.modifiers.gt){
-			if(type == JSColumn.DATETIME) {
+		if (term.modifiers.gt) {
+			if (type == JSColumn.DATETIME) {
 				/** @type {Date} */
 				min = value;
 				max = new Date(min.getTime());
-				max.setHours(23,59,59,999);
+				max.setHours(23, 59, 59, 999);
 				return column.gt(max);
 			}
 			return column.gt(value);
 		}
-		
+
 		// GE MODIFIER
-		if(term.modifiers.ge){
+		if (term.modifiers.ge) {
 			return column.ge(value);
 		}
-		
+
 		// LT MODIFIER
-		if(term.modifiers.lt){
+		if (term.modifiers.lt) {
 			return column.lt(value);
 		}
-		
+
 		// LE MODIFER
-		if(term.modifiers.le){
-			if(type == JSColumn.DATETIME) {
+		if (term.modifiers.le) {
+			if (type == JSColumn.DATETIME) {
 				/** @type {Date} */
 				min = value;
 				max = new Date(min.getTime());
-				max.setHours(23,59,59,999);
+				max.setHours(23, 59, 59, 999);
 				return column.le(max);
 			}
 			return column.le(value);
 		}
-		
+
 		// BETWEEN MODIFIER
-		if(term.modifiers.between){
-			if(type == JSColumn.DATETIME) {
+		if (term.modifiers.between) {
+			if (type == JSColumn.DATETIME) {
 				/** @type {Date} */
 				max = valueMax;
 				max = new Date(max.getTime());
-				max.setHours(23,59,59,999);
-				return column.between(value,max);
+				max.setHours(23, 59, 59, 999);
+				return column.between(value, max);
 			}
-			return column.between(value,valueMax);
+			return column.between(value, valueMax);
 		}
-		
+
 		// NO MODIFER...
-		
-		if(type == JSColumn.TEXT){
+		if (type == JSColumn.TEXT) {
 			textValue = value;
-			
+
 			// CHECK STRING MATCHING MODE
 			matchMode = sp.getStringMatching();
-			if(matchMode == STRING_MATCHING.STARTS_WITH || matchMode == STRING_MATCHING.CONTAINS){
-				textValue = textValue+'%';
+			if (matchMode == STRING_MATCHING.STARTS_WITH || matchMode == STRING_MATCHING.CONTAINS) {
+				textValue = textValue + '%';
 			}
-			if(matchMode == STRING_MATCHING.ENDS_WITH || matchMode == STRING_MATCHING.CONTAINS){
-				textValue = '%'+textValue;
+			if (matchMode == STRING_MATCHING.ENDS_WITH || matchMode == STRING_MATCHING.CONTAINS) {
+				textValue = '%' + textValue;
 			}
 			
 			// CHECK CASE-SENSITIVITY
-			if(sp.isCaseSensitive()){
+			if (sp.isCaseSensitive()) {
 				return column.like(textValue);
 			}
 			return column.upper.like(textValue.toUpperCase());
 		}
-		
-		if(type == JSColumn.DATETIME) {
+
+		if (type == JSColumn.DATETIME) {
 			/** @type {Date} */
 			min = value;
 			max = new Date(min.getTime());
-			max.setHours(23,59,59,999);
-			return column.between(min,max);
+			max.setHours(23, 59, 59, 999);
+			return column.between(min, max);
 		}
 		return column.eq(value);
 	}
@@ -997,7 +995,7 @@ function SearchProvider(search, dataProviderID) {
 
 	/**
 	 * @public
-	 * @return {String} The string mathcing mode used
+	 * @return {String} The string matching mode used
 	 */
 	this.getStringMatching = function() {
 		return stringMatchingMode;
@@ -1024,21 +1022,21 @@ function getVersion() {
  * 
  * @properties={typeid:24,uuid:"1C2A89EC-BD4C-4094-8660-8CD354D6129B"}
  */
-function parseQBColumn(q, dataProviderID){
-	
+function parseQBColumn(q, dataProviderID) {
 	var path = dataProviderID.split('.');
 	var columnName = path.pop();
-	if(!path.length){
+	if (!path.length) {
 		return q.columns[columnName];
 	}
-	
+
 	var lastJoin = path.pop();
 	var joins = q.joins
-	for(var i in path){
+	for (var i in path) {
 		joins = joins[path[i]].joins;
 	}
 	return joins[lastJoin].columns[columnName];
 }
+
 
 /**
  * Parses the JSTable & Column for a given dataprovider in a datasource.
@@ -1052,26 +1050,27 @@ function parseQBColumn(q, dataProviderID){
  * 
  * @properties={typeid:24,uuid:"ACEDB1CD-3FD3-410F-9279-67DFD6F75FA3"}
  */
-function parseJSColumnInfo(dataSource, dataProviderID){
+function parseJSColumnInfo(dataSource, dataProviderID) {
 	var table = databaseManager.getTable(dataSource);
 	var path = dataProviderID.split('.');
 	var colName = path.pop();
-	if(path.length){
+	if (path.length) {
 		var relation = solutionModel.getRelation(path.pop());
 		table = databaseManager.getTable(relation.foreignDataSource);
-		
 	}
-	if(!table){
+	if (!table) {
 		log.warn('Parse column info failed. No table found for: ' + dataSource);
 		return null;
 	}
 	var column = table.getColumn(colName)
-	if(!column){
+	if (!column) {
 		log.warn('Parse column info failed. No column found for: dataSource=' + dataSource + ', dataProvider=' + dataProviderID);
 		return null;
 	}
-	return {table:table, column:column};
+	return { table: table, column: column };
 }
+
+
 
 /**
  * TODO Move to svyUtils String scope
@@ -1085,22 +1084,23 @@ function parseJSColumnInfo(dataSource, dataProviderID){
  * 
  * @properties={typeid:24,uuid:"A50F361D-1C67-4370-A8EF-787A904888ED"}
  */
-function parseEnclosedStrings(text, open, close){
-	if(!open){
+function parseEnclosedStrings(text, open, close) {
+	if (!open) {
 		open = '"'
 	}
-	if(!close){
+	if (!close) {
 		close = open;
 	}
 	open = regexpEscape(open);
 	close = regexpEscape(close);
-	var pattern = new RegExp(open +'(.*?)' + close,'g');
+	var pattern = new RegExp(open + '(.*?)' + close, 'g');
 	var matches = [];
-	for(var match=pattern.exec(text); match!=null; match=pattern.exec(text)) {
+	for (var match = pattern.exec(text); match != null; match = pattern.exec(text)) {
 		matches.push(match[1]);
 	}
 	return matches;
 }
+
 
 /**
  * TODO Move to String utils scope in svyUtils
@@ -1123,11 +1123,14 @@ function regexpEscape(s){
  * 
  * @properties={typeid:24,uuid:"714324D9-AFD5-4C3E-8462-2D1EB9208ADF"}
  */
-function arrayCopy(a){
+function arrayCopy(a) {
 	var a2 = [];
-	a.forEach(function(e){a2.push(e)});
+	a.forEach(function(e) {
+		a2.push(e)
+	});
 	return a2;
 }
+
 
 /**
  * Check a data provider string for presence of a relation which is cross-database
@@ -1137,17 +1140,18 @@ function arrayCopy(a){
  *
  * @properties={typeid:24,uuid:"5D004F36-C8D2-4072-894D-C14E11D5E462"}
  */
-function dataProviderHasXDBRelation(dataProviderID){
+function dataProviderHasXDBRelation(dataProviderID) {
 	var path = dataProviderID.split('.');
 	path.pop();
-	while(path.length){
+	while (path.length) {
 		var relation = solutionModel.getRelation(path.pop());
 		var primaryServer = databaseManager.getDataSourceServerName(relation.primaryDataSource);
 		var foreignServer = databaseManager.getDataSourceServerName(relation.foreignDataSource);
-		if(primaryServer != foreignServer){
-			log.warn('Invalid data provider ['+dataProviderID+'] has a cross-database relation ['+relation.name+'] which is not supported');
+		if (primaryServer != foreignServer) {
+			log.warn('Invalid data provider [' + dataProviderID + '] has a cross-database relation [' + relation.name + '] which is not supported');
 			return true;
 		}
 	}
 	return false;
 }
+
