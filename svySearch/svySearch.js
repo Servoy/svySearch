@@ -19,7 +19,8 @@ var SVY_SEARCH_VERSION = '1.2.3';
 var STRING_MATCHING = {
 	CONTAINS : 'contains',
 	STARTS_WITH : 'starts-with',
-	ENDS_WITH : 'ends-with'
+	ENDS_WITH : 'ends-with',
+	EQUALS : 'equals'
 };
 
 /**
@@ -269,8 +270,6 @@ function SimpleSearch(dataSource){
 	 * @type {String}
 	 */
 	var dateFormat = 'yyyy/MM/dd';
-	
-	
 	
 	/**
 	 * Returns the date format which is used to parse user input for searching dates
@@ -557,6 +556,9 @@ function SimpleSearch(dataSource){
 			}
 		}
 
+		var matchMode = sp.getStringMatching();
+		var textOperator = matchMode === STRING_MATCHING.EQUALS ? 'eq' : 'like';
+
 		//	APPLY Modifiers
 
 		//	EXCLUDE MODIFIER
@@ -569,7 +571,6 @@ function SimpleSearch(dataSource){
 				var textValue = value;
 
 				// CHECK STRING MATCHING MODE
-				var matchMode = sp.getStringMatching();
 				if (matchMode == STRING_MATCHING.STARTS_WITH || matchMode == STRING_MATCHING.CONTAINS) {
 					textValue = textValue + '%';
 				}
@@ -604,9 +605,9 @@ function SimpleSearch(dataSource){
 
 				// CHECK CASE-SENSITIVITY
 				if (sp.isCaseSensitive()) {
-					return column.not.like(textValue);
+					return column.not[textOperator](textValue);
 				}
-				return column.upper.not.like(textValue.toUpperCase());
+				return column.upper.not[textOperator](textValue.toUpperCase());
 			}
 
 			if (type == JSColumn.DATETIME) {
@@ -721,9 +722,9 @@ function SimpleSearch(dataSource){
 
 			// CHECK CASE-SENSITIVITY
 			if (sp.isCaseSensitive()) {
-				return column.like(textValue);
+				return column[textOperator](textValue);
 			}
-			return column.upper.like(textValue.toUpperCase());
+			return column.upper[textOperator](textValue.toUpperCase());
 		}
 
 		if (type == JSColumn.DATETIME) {
