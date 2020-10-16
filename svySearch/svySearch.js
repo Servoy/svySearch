@@ -272,6 +272,12 @@ function SimpleSearch(dataSource){
 	var dateFormat = 'yyyy/MM/dd';
 	
 	/**
+	 * @protected  
+	 * @type {Array<String>}
+	 */
+	var alternateDateFormat = [];
+	
+	/**
 	 * Returns the date format which is used to parse user input for searching dates
 	 * 
 	 * @public 
@@ -284,11 +290,95 @@ function SimpleSearch(dataSource){
 	/**
 	 * Sets the date formatting which will be used to parse user input
 	 * @public 
+	 * @param {String} format any date format pattern that will result in a well defined time interval to search for (e.g. MM-yyyy will look for beginning of month to end of month)
+	 * 
+	 * @example 
+	 * <pre>
+	 * simpleSearch.setDateFormat("dd/MM/yyyy");
+	 * 
+	 * //The following are invalid formats
+	 * // simpleSearch.setDateFormat("dd/yyyy"); will throw an exception
+	 * // simpleSearch.setDateFormat("MM"); will throw an exception
+	 *</pre>
+	 * 
+	 * @return {SimpleSearch} 
+	 */
+	this.setDateFormat = function(format){
+		var parsedFormat = parseDateFormat(format);
+		if (!parsedFormat.isValid) {
+			throw "Invalid format " + format + '; date format pattern must result in a well defined time interval to search for (e.g. MM-yyyy will look for beginning of month to end of month)';
+		}
+		
+		dateFormat = format;
+		return this;
+	}
+	
+	/**
+	 * Returns the alternate date format which is used to parse user input for searching dates in addition to the default format
+	 * 
+	 * @public 
+	 * @return {Array<String>}
+	 */
+	this.getAlternateDateFormats = function(){
+		return arrayCopy(alternateDateFormat);
+	}
+	
+	/**
+	 * Add alternative date format which is used to parse user input for searching dates in addition to the default format.
+	 * 
+	 * @public 
+	 * @param {String} format any date format pattern that will result in a well defined time interval to search for (e.g. MM-yyyy will look for beginning of month to end of month)
+	 * @return {SimpleSearch}
+	 * 
+	 * 
+	 * @example 
+	 * <pre>
+	 * simpleSearch.addAlternateDateFormat("dd/MM/yyyy");
+	 * simpleSearch.addAlternateDateFormat("MM-yyyy");
+	 * simpleSearch.addAlternateDateFormat("MM/yyyy");
+	 * simpleSearch.addAlternateDateFormat("MMM yyyy");
+	 * simpleSearch.addAlternateDateFormat("MMMM yyyy");
+	 * simpleSearch.addAlternateDateFormat("yyyy");
+	 * ...
+	 * 
+	 * //The following are invalid formats
+	 * // simpleSearch.addAlternateDateFormat("dd/yyyy"); will throw an exception
+	 * // simpleSearch.addAlternateDateFormat("MM"); will throw an exception
+	 *</pre>
+	 */
+	this.addAlternateDateFormat = function(format){
+		
+		var parsedFormat = parseDateFormat(format);
+		if (!parsedFormat.isValid) {
+			throw "Invalid format " + format + '; date format pattern must result in a well defined time interval to search for (e.g. MM-yyyy will look for beginning of month to end of month)';
+		}
+		
+		// insert format at specific position
+		for (var i = 0; i < alternateDateFormat.length; i++) {
+			var rank = parseDateFormat(alternateDateFormat[i]).rank;
+			if (rank < parsedFormat.rank) {
+				alternateDateFormat = scopes.svyJSUtils.arrayInsert(alternateDateFormat, i, format);
+				return this;
+			}
+		}
+		
+		if (alternateDateFormat.indexOf(format) == -1) {
+			alternateDateFormat.push(format);
+		}
+		return this;
+	}
+	
+	/**
+	 * Remove alternative date format which is used to parse user input for searching dates in addition to the default format
+	 * 
+	 * @public 
 	 * @param {String} format
 	 * @return {SimpleSearch}
 	 */
-	this.setDateFormat = function(format){
-		dateFormat = format;
+	this.removeAlternateDateFormat = function(format){
+		if (alternateDateFormat.indexOf(format) > -1) {
+			alternateDateFormat.splice(alternateDateFormat.indexOf(format), 1);
+		}
 		return this;
 	}
 	
@@ -529,6 +619,7 @@ function SimpleSearch(dataSource){
 		var jsColumn = sp.getJSColumn();
 		var type = jsColumn.getType();
 		var columnLength = jsColumn.getLength();
+		var valueDateFormat;
 		/** @type {String} */
 		var value;
 		/** @type {String} */
@@ -540,6 +631,7 @@ function SimpleSearch(dataSource){
 		}
 
 		// CAST VALUE
+		valueDateFormat = sp.getMatchingDateFormat(value);
 		value = sp.cast(value);
 		if (value === null) {
 			log.debug('Could not cast value for search provider data type for dataprovider ' + dp);
@@ -549,12 +641,47 @@ function SimpleSearch(dataSource){
 		// HANDLE MAX VALUE
 		if (term.valueMax) {
 			valueMax = sp.applySubstitutions(term.valueMax);
+			// date format should match
+			if (sp.getMatchingDateFormat(valueMax) != valueDateFormat) {
+				log.debug('Format of max value doesn\'t match min value format on search provider for dataprovider ' + dp);
+				return null;
+			}
 			valueMax = sp.cast(valueMax);
 			if (valueMax == NaN || valueMax == null) {
 				log.debug('Could not cast value max for search provider data type for dataprovider ' + dp);
 				return null;
 			}
 		}
+		
+		// DATE SEARCH IS ALWAYS BETWEEN MIN-MAX VALUE
+		if (type === JSColumn.DATETIME) {
+			var formatObj = parseDateFormat(valueDateFormat);
+			
+			var maxDate = valueMax ? new Date(valueMax) : new Date(value.getTime());
+			
+			// move valueMax to last date available (depending on format)
+			if (formatObj.second) { 				// Match till next seconds
+				maxDate = new Date(maxDate.getTime() + 1000);
+			} else if (formatObj.minute) { 			// Match till minute
+				maxDate = new Date(maxDate.getTime() + 60000);
+			} else if (formatObj.hour) { 			// Match till hour
+				maxDate = new Date(maxDate.getTime() + 3600000);
+			} else if (formatObj.day) { 			//Till end of the Day
+				maxDate = scopes.svyDateUtils.toEndOfDay(maxDate);
+			} else if (formatObj.month) {			// Till end of the Month
+				maxDate = scopes.svyDateUtils.toEndOfDay(scopes.svyDateUtils.getLastDayOfMonth(maxDate));			
+			} else if (formatObj.year) {			// Till end of the Year
+				maxDate = scopes.svyDateUtils.toEndOfDay(scopes.svyDateUtils.getLastDayOfYear(maxDate));
+			} else {
+				// Can't handle other type of Searches
+				log.debug('Could not search for dataprovider ' + dp + ' with dateFormat ' + valueDateFormat);
+				return null;
+			}
+			
+			// update valueMax
+			valueMax = maxDate;
+		}
+		
 
 		var matchMode = sp.getStringMatching();
 		var textOperator = matchMode === STRING_MATCHING.EQUALS ? 'eq' : 'like';
@@ -611,11 +738,7 @@ function SimpleSearch(dataSource){
 			}
 
 			if (type == JSColumn.DATETIME) {
-				/** @type {Date} */
-				var min = value;
-				var max = new Date(min.getTime());
-				max.setHours(23, 59, 59, 999);
-				return column.not.between(min, max);
+				return column.not.between(value, valueMax);
 			}
 			return column.not.eq(value);
 		}
@@ -646,11 +769,7 @@ function SimpleSearch(dataSource){
 		// GT MODIFIER
 		if (term.modifiers.gt) {
 			if (type == JSColumn.DATETIME) {
-				/** @type {Date} */
-				min = value;
-				max = new Date(min.getTime());
-				max.setHours(23, 59, 59, 999);
-				return column.gt(max);
+				return column.gt(valueMax);
 			}
 			return column.gt(value);
 		}
@@ -668,11 +787,7 @@ function SimpleSearch(dataSource){
 		// LE MODIFER
 		if (term.modifiers.le) {
 			if (type == JSColumn.DATETIME) {
-				/** @type {Date} */
-				min = value;
-				max = new Date(min.getTime());
-				max.setHours(23, 59, 59, 999);
-				return column.le(max);
+				return column.le(valueMax);
 			}
 			return column.le(value);
 		}
@@ -680,11 +795,7 @@ function SimpleSearch(dataSource){
 		// BETWEEN MODIFIER
 		if (term.modifiers.between) {
 			if (type == JSColumn.DATETIME) {
-				/** @type {Date} */
-				max = valueMax;
-				max = new Date(max.getTime());
-				max.setHours(23, 59, 59, 999);
-				return column.between(value, max);
+				return column.between(value, valueMax);
 			}
 			return column.between(value, valueMax);
 		}
@@ -728,11 +839,7 @@ function SimpleSearch(dataSource){
 		}
 
 		if (type == JSColumn.DATETIME) {
-			/** @type {Date} */
-			min = value;
-			max = new Date(min.getTime());
-			max.setHours(23, 59, 59, 999);
-			return column.between(min, max);
+			return column.between(value, valueMax);
 		}
 		return column.eq(value);
 	}
@@ -1006,10 +1113,17 @@ function SearchProvider(search, dataProviderID) {
 	 */
 	this.cast = function(value) {
 		var type = this.getJSColumn().getType();
-		var parsedValue;
-		if (type == JSColumn.DATETIME) {
+		var parsedValue = null;
+		if (type == JSColumn.DATETIME && value) {
 			try {
-				return utils.parseDate(value, search.getDateFormat());
+				
+				// parse date format if there is any match
+				var matchingDateFormat = this.getMatchingDateFormat(value);
+				if (matchingDateFormat) {
+					parsedValue = utils.parseDate(value, matchingDateFormat);
+				}
+				
+				return parsedValue;
 			} catch (e) {
 				return null;
 			}
@@ -1027,6 +1141,48 @@ function SearchProvider(search, dataProviderID) {
 
 		log.warn('SearchProvider [' + this.getDataProviderID() + '] has unsupported column type');
 		return value;
+	}
+	
+	/**
+	 * Returns the first matching dateFormat compatible with the given value
+	 *
+	 * @public
+	 * @param {String} value The value to be matched with the availale dateFormats
+	 * @return {String} The matching date format
+	 */
+	this.getMatchingDateFormat = function(value) {
+		var type = this.getJSColumn().getType();
+		if (type == JSColumn.DATETIME && value) {
+			try {
+				var defaultParsedValue = utils.parseDate(value, search.getDateFormat());
+			} catch (e) {
+
+			}
+
+			// does value match any of the set date formats ? e.g. yyyy-MM-dd|yyyy/MM/dd|yyyy-MM|yyyy-MM|yyyy
+			var dateFormats = search.getAlternateDateFormats();
+			for (var i = 0; !parsedValue && i < dateFormats.length; i++) {
+				try {
+					var parsedValue = utils.parseDate(value, dateFormats[i]);
+					if (parsedValue) {
+						// return the format with higher ranking between default format and alternate formats
+						if (defaultParsedValue) {
+							var defaultFormatRank = parseDateFormat(search.getDateFormat()).rank;
+							var alternateFormatRank = parseDateFormat(dateFormats[i]).rank;
+							return defaultFormatRank < alternateFormatRank ? dateFormats[i] : search.getDateFormat();
+						}
+
+						// alternate format if default format is not valid
+						return dateFormats[i];
+					}
+				} catch (e) {
+
+				}
+			}
+			// default format if valid
+			return defaultParsedValue ? search.getDateFormat() : null;
+		}
+		return null;
 	}
 
 	/**
@@ -1157,6 +1313,103 @@ function parseEnclosedStrings(text, open, close) {
 		matches.push(match[1]);
 	}
 	return matches;
+}
+
+/**
+ * @param {String} dateFormat
+ * @private 
+ * @return {{
+ * 		year: Boolean,
+		month: Boolean,
+		day: Boolean,
+		hour: Boolean,
+		minute: Boolean,
+		second: Boolean,
+		rank: Number,
+		isValid: Boolean
+ * }}
+ *
+ * @properties={typeid:24,uuid:"3081B172-5C00-45F3-B53A-CF40ED2C8DE6"}
+ */
+function parseDateFormat(dateFormat) {
+	var rank = 0;
+	var isValid = false;
+	var isInvalid = false;
+	var format = {
+		year: false,
+		month: false,
+		day: false,
+		hour: false,
+		minute: false,
+		second: false,
+		rank: -1,
+		isValid: false
+	}
+	
+	if (/yyyy|YYYY|yy|YY|y|Y|Yr/.test(dateFormat)){
+		// format has year
+		format.year = true;
+		rank += 1000;
+		isValid = true;
+	} else {
+		isInvalid = true;
+	}
+	
+	if (/M|MM|MMM|MMMM/.test(dateFormat)) {
+		// format has month
+		format.month = true;
+		isValid = isValid && !isInvalid;
+		rank += 100;
+	}  else {
+		isInvalid = true;
+	}
+	
+	if (/dd|DD|DDD|Day|DAY|D|d/.test(dateFormat)) {
+		// format has day
+		format.day = true;
+		// 
+		isValid = isValid && (!isInvalid || /D|DD|DDD/.test(dateFormat))// && format.year));
+		rank += 10;
+	} else {
+		isInvalid = true;
+	}
+
+	if (/HH|hh|KK|kk/.test(dateFormat)) {
+		// format has hour
+		format.hour = true;
+		isValid = isValid && !isInvalid;
+		rank += 1;
+	} else {
+		isInvalid = true;
+	}
+	
+	if (/m|mm/.test(dateFormat)) {
+		// format has minute
+		format.minute = true;
+		isValid = isValid && !isInvalid;
+		rank += 0.1;
+	} else {
+		isInvalid = true;
+	}
+	
+	if (/s|ss/.test(dateFormat)) {
+		// format has second
+		format.second = true;
+		isValid = isValid && !isInvalid;
+		rank += 0.01;
+	} else {
+		isInvalid = true;
+	}
+	
+	// set a rank
+	if (rank > 0) {
+		format.rank = rank;
+	}
+	
+	// set valid format
+	format.isValid = isValid;
+	
+	return format;
 }
 
 
