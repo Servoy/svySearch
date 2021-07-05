@@ -1,4 +1,12 @@
 /**
+ * @private 
+ * @type {String}
+ *
+ * @properties={typeid:35,uuid:"C65AA789-5101-4B59-848F-839F3E979ED5"}
+ */
+var SVY_SEARCH_VERSION = '1.3.0';
+
+/**
  * Constants used for string  matching behavior on individual SearchProviders
  * 
  * @public 
@@ -1215,7 +1223,7 @@ function SearchProvider(search, dataProviderID) {
  * @properties={typeid:24,uuid:"3CD7D454-23F4-48A3-BE8C-61C302CC5D67"}
  */
 function getVersion() {
-	return application.getVersionInfo()['svySearch'];
+    return SVY_SEARCH_VERSION;
 }
 
 /**
