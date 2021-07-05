@@ -630,12 +630,19 @@ function SimpleSearch(dataSource){
 			value = sp.applySubstitutions(term.value);
 		}
 
+		// INTEGER CAST IN QUERY
+		if(sp.isCastInteger() && type == JSColumn.INTEGER){
+			column = column.cast(QUERY_COLUMN_TYPES.TYPE_TEXT)
+			type = JSColumn.TEXT;
+		
 		// CAST VALUE
-		valueDateFormat = sp.getMatchingDateFormat(value);
-		value = sp.cast(value);
-		if (value === null) {
-			log.debug('Could not cast value for search provider data type for dataprovider ' + dp);
-			return null;
+		} else {
+			valueDateFormat = sp.getMatchingDateFormat(value);
+			value = sp.cast(value);
+			if (value === null) {
+				log.debug('Could not cast value for search provider data type for dataprovider ' + dp);
+				return null;
+			}
 		}
 
 		// HANDLE MAX VALUE
@@ -841,6 +848,7 @@ function SimpleSearch(dataSource){
 		if (type == JSColumn.DATETIME) {
 			return column.between(value, valueMax);
 		}
+		
 		return column.eq(value);
 	}
 	
@@ -926,6 +934,12 @@ function SearchProvider(search, dataProviderID) {
 	 * @type {Boolean}
 	 */
 	var caseSensitive = false;
+	
+	/**
+	 * @private 
+	 * @type {Boolean}
+	 */
+	var castInteger = false;
 
 	/**
 	 * @protected
@@ -1128,8 +1142,17 @@ function SearchProvider(search, dataProviderID) {
 				return null;
 			}
 		}
-
-		if (type == JSColumn.INTEGER || type == JSColumn.NUMBER) {
+		
+		if (type == JSColumn.INTEGER) {
+			if(this.isCastInteger()){
+				return value;
+			}
+			parsedValue = new Number(value);
+			if (isNaN(parsedValue)) return null;
+			return parsedValue;
+		}
+		
+		if (type == JSColumn.NUMBER) {
 			parsedValue = new Number(value);
 			if (isNaN(parsedValue)) return null;
 			return parsedValue;
@@ -1213,6 +1236,32 @@ function SearchProvider(search, dataProviderID) {
 	 */
 	this.getStringMatching = function() {
 		return stringMatchingMode;
+	}
+	
+	/**
+	 * Sets that this INTEGER SearchProvider will be treated like TEXT in the query and all other text-based configurations will apply (i.e. LIKE operators, etc)
+	 * Use this function if the data provider should be searched as text. For example: "1025" could show invoices 10250,10251,1052,etc. because of a LIKE operator.
+	 * @public 
+	 * @param {Boolean} b TRUE to cast the SearchProvider
+	 * @return {SearchProvider} This SearchProvider for call chaining.
+	 */
+	this.setCastInteger = function(b){
+		if(b && this.getJSColumn().getType() != JSColumn.INTEGER){
+			application.output('Attempt to set integer-to-text casting on a non-integer column. This will be ignored', LOGGINGLEVEL.WARNING);
+			return this;
+		}
+		castInteger = b === true;
+		return this;
+	}
+	
+	/**
+	 * Return the cast integer setting for this SearchProvider
+	 * @public 
+	 * @return {Boolean}
+	 * @see setCastInteger
+	 */
+	this.isCastInteger = function(){
+		return castInteger === true;
 	}
 }
 
