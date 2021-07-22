@@ -16,6 +16,17 @@ var STRING_MATCHING = {
 };
 
 /**
+ * @private 
+ * @enum 
+ * @properties={typeid:35,uuid:"41E78B28-7CEC-4845-938B-8FFF46F9B5FA",variableType:-4}
+ */
+var INTEGER_MAX = {
+	INTEGER : java.lang.Integer.MAX_VALUE,
+	SMALL_INT : 32767,
+	TINY_INT : 127
+};
+
+/**
  * TODO Implement logging
  * @private 
  * @properties={typeid:35,uuid:"7B710B9E-E6C8-44F3-8D74-DABD1198F442",variableType:-4}
@@ -622,6 +633,41 @@ function SimpleSearch(dataSource){
 			value = sp.applySubstitutions(term.value);
 		}
 
+		// CHECK INT COLUMN MAX
+		if(type == JSColumn.INTEGER){
+			var sqlType = jsColumn.getSQLType();
+			var max = INTEGER_MAX.INTEGER;
+			
+			switch (sqlType) {
+				
+				// REGULAR (32-bit) INT
+				case java.sql.Types.INTEGER:
+					max = INTEGER_MAX.INTEGER
+					break;
+				
+				// SMALL INT
+				case java.sql.Types.SMALLINT:
+					max = INTEGER_MAX.SMALL_INT
+					break;
+				
+				// TINY INT
+				case java.sql.Types.TINYINT:
+					max = INTEGER_MAX.TINY_INT
+					break;
+					
+				default:
+					log.warn('Unexpected integer SQL type: ' + sqlType);
+					break;
+			}
+			
+			// CHECK MAX
+			if(value >= max){
+				log.debug('Value exceeds max integer value ('+max+') defined for SearchProvider ('+sp.getAlias()+') SQL type ('+sqlType+'). SearchProvider will be ignored');
+				return null;
+			}
+		}
+		
+		
 		// INTEGER CAST IN QUERY
 		if(sp.isCastInteger() && type == JSColumn.INTEGER){
 			column = column.cast(QUERY_COLUMN_TYPES.TYPE_TEXT)
