@@ -27,6 +27,16 @@ var INTEGER_MAX = {
 };
 
 /**
+ * The max year that can be used in a WHERE clause. Larger values can be rejected by DB vendors.
+ * 
+ * @private 
+ * @type {Number}
+ *
+ * @properties={typeid:35,uuid:"2F4408EB-E529-4156-89D3-46F6045E0884",variableType:4}
+ */
+var YEAR_MAX = 9999;
+
+/**
  * TODO Implement logging
  * @private 
  * @properties={typeid:35,uuid:"7B710B9E-E6C8-44F3-8D74-DABD1198F442",variableType:-4}
@@ -1173,6 +1183,11 @@ function SearchProvider(search, dataProviderID) {
 				var matchingDateFormat = this.getMatchingDateFormat(value);
 				if (matchingDateFormat) {
 					parsedValue = utils.parseDate(value, matchingDateFormat);
+				}
+				
+				// check max year
+				if(parsedValue && parsedValue.getFullYear() > YEAR_MAX){
+					parsedValue = null;
 				}
 				
 				return parsedValue;
