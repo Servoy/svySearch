@@ -735,6 +735,12 @@ function SimpleSearch(dataSource){
 			
 			// update valueMax
 			valueMax = maxDate;
+			
+			if (sp.getUseLocalDateTime() == false) {
+				// get the server time date to be used for the search
+				value = scopes.svyDateUtils.getServerDateTime(new Date(value.getTime()));
+				valueMax = scopes.svyDateUtils.getServerDateTime(new Date(valueMax.getTime()));
+			}
 		}
 		
 
@@ -988,6 +994,12 @@ function SearchProvider(search, dataProviderID) {
 	 * @type {Boolean}
 	 */
 	var castInteger = false;
+	
+    /**
+     * @protected 
+     * @type {Boolean}
+     */
+    var useLocalDateTime = false;
 
 	/**
 	 * @protected
@@ -1114,6 +1126,26 @@ function SearchProvider(search, dataProviderID) {
 	 */
 	this.isCaseSensitive = function() {
 		return caseSensitive;
+	}
+	
+	/**
+	 * Sets the search provider to make use of useLocalDateTime
+	 * @public 
+	 * @param {Boolean} flag
+	 * @return {SearchProvider}
+	 */
+	this.setUseLocalDateTime = function(flag) {
+		useLocalDateTime = flag;
+		return this;
+	}	
+
+	/**
+	 * Indicate if the search provider for a Date make use of useLocalDateTime
+	 * @public 
+	 * @return {Boolean}
+	 */
+	this.getUseLocalDateTime = function() {
+		return useLocalDateTime;
 	}
 
 	/**
