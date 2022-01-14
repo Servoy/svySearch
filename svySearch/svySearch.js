@@ -743,6 +743,19 @@ function SimpleSearch(dataSource){
 			}
 		}
 		
+		// PREVENT SEARCHES FOR UUIDs USING LIKE OR ANY OPERATOR OTHER THAN eq
+		if (jsColumn.hasFlag(JSColumn.UUID_COLUMN)) {
+			//check whether search value is a UUID
+			var uuidValue = application.getUUID(value);
+			if (!uuidValue) {
+				return null;
+			}
+			if (term.modifiers.exclude) {
+				return column.not.eq(value);
+			} else {
+				return column.eq(value);				
+			}
+		}
 
 		var matchMode = sp.getStringMatching();
 		var textOperator = matchMode === STRING_MATCHING.EQUALS ? 'eq' : 'like';
