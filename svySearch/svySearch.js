@@ -1230,8 +1230,14 @@ function SearchProvider(search, dataProviderID) {
 					parsedValue = utils.parseDate(value, matchingDateFormat);
 				}
 				
+				var invalidDate = utils.parseDate("99999999999999", "yyyy")
+				// check invalid date
+				if (parsedValue && parsedValue === invalidDate){
+					parsedValue = null;
+				}
+				
 				// check max year
-				if(parsedValue && parsedValue.getFullYear() > YEAR_MAX){
+				if (parsedValue && parsedValue.getFullYear() > YEAR_MAX){
 					parsedValue = null;
 				}
 				
