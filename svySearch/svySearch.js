@@ -44,6 +44,14 @@ var YEAR_MAX = 9999;
 var log = scopes.svyLogManager.getLogger('com.servoy.extensions.search.SimpleSearch');
 
 /**
+ * The default value for case sensitivity 
+ * @private 
+ * @type {Boolean}
+ * @properties={typeid:35,uuid:"E0F98F03-717E-46F4-81B9-ED2FF4657627",variableType:-4}
+ */
+var defaultCaseSensitivity = application.getUserProperty('search.defaultCaseSensitivity') ? true : false;
+
+/**
  * Creates a search object
  * 
  * @public 
@@ -1000,7 +1008,7 @@ function SearchProvider(search, dataProviderID) {
 	 * @private
 	 * @type {Boolean}
 	 */
-	var caseSensitive = false;
+	var caseSensitive = defaultCaseSensitivity;
 	
 	/**
 	 * @private 
