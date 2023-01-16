@@ -673,6 +673,16 @@ function SimpleSearch(dataSource){
 					max = INTEGER_MAX.TINY_INT
 					break;
 					
+				// BIT
+				case java.sql.Types.BIT:
+					max = INTEGER_MAX.TINY_INT
+					break;
+				
+				// BOOLEAN
+				case java.sql.Types.BOOLEAN:
+					max = INTEGER_MAX.TINY_INT
+					break;
+						
 				default:
 					log.warn('Unexpected integer SQL type: ' + sqlType);
 					break;
