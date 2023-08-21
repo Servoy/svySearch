@@ -1626,11 +1626,9 @@ function dataProviderHasXDBRelation(dataProviderID) {
 	var path = dataProviderID.split('.');
 	path.pop();
 	while (path.length) {
-		var relation = solutionModel.getRelation(path.pop());
-		var primaryServer = databaseManager.getDataSourceServerName(relation.primaryDataSource);
-		var foreignServer = databaseManager.getDataSourceServerName(relation.foreignDataSource);
-		if (primaryServer != foreignServer) {
-			log.warn('Invalid data provider [' + dataProviderID + '] has a cross-database relation [' + relation.name + '] which is not supported');
+		var relationName = path.pop()
+		if (scopes.svyDataUtils.isCrossDBRelation(relationName)) {
+			log.warn('Invalid data provider [' + dataProviderID + '] has a cross-database relation [' + relationName + '] which is not supported');
 			return true;
 		}
 	}
