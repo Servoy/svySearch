@@ -434,6 +434,13 @@ function SimpleSearch(dataSource){
 			log.warn('Search Provider cannot be added, because no column was found for: dataSource=' + this.getDataSource() + ', dataProvider=' + dataProviderID);
 			return null;
 		}
+		
+		// check if column type is supported
+		var type = jsColumnInfo.column.getType();
+		if (type != JSColumn.TEXT && type != JSColumn.INTEGER && type != JSColumn.NUMBER && type != JSColumn.DATETIME) {
+			log.warn('Search Provider cannot be added, because the dataProvider [' + dataProviderID + '] has unsupported column type [' + jsColumnInfo.column.getTypeAsString() + ']' );
+			return null;
+		}
 
 		// check if alias or data provider was already added
 		var spExists = false;
@@ -649,6 +656,13 @@ function SimpleSearch(dataSource){
 		// apply substitutions
 		if (term.value) {
 			value = sp.applySubstitutions(term.value);
+		}
+				
+		// CHECK TYPE
+		if (type != JSColumn.TEXT && type != JSColumn.INTEGER && type != JSColumn.NUMBER && type != JSColumn.DATETIME) {
+			// should i check if type is unsupported ?
+			log.warn('SearchProvider [' + dp + '] has unsupported column type [' + jsColumn.getTypeAsString() + ']' );
+			return null;
 		}
 
 		// CHECK INT COLUMN MAX
