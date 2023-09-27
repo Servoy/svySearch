@@ -49,7 +49,7 @@ var log = scopes.svyLogManager.getLogger('com.servoy.extensions.search.SimpleSea
  * @type {Boolean}
  * @properties={typeid:35,uuid:"E0F98F03-717E-46F4-81B9-ED2FF4657627",variableType:-4}
  */
-var defaultCaseSensitivity = application.getUserProperty('svy.search.defaultCaseSensitivity') ? true : false;
+var defaultCaseSensitivity = application.getUserProperty('svy.search.defaultCaseSensitivity') == 'true' ? true : false;
 
 /**
  * Creates a search object
