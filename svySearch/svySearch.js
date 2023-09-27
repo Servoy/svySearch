@@ -817,7 +817,7 @@ function SimpleSearch(dataSource){
 					if (sp.isCaseSensitive()) {
 						return column.not.eq(value);
 					} else {
-						return column.upper.not.eq(value.toUpperCase());
+						return column.upper.not.eq(q.functions.upper(value));
 					}
 				} else if (columnLength > 0 && matchMode == STRING_MATCHING.CONTAINS && textValue.length == columnLength + 1) {
 					// searching for e.g. %1234% on a column with length 5
@@ -826,7 +826,7 @@ function SimpleSearch(dataSource){
 					if (sp.isCaseSensitive()) {
 						return q.and.add(column.not.like(value + '%')).add(column.not.like('%' + value));
 					} else {
-						return q.and.add(column.upper.not.like(value.toUpperCase() + '%')).add(column.upper.not.like('%' + value.toUpperCase()));
+						return q.and.add(column.upper.not.like(q.functions.upper(value + '%'))).add(column.upper.not.like(q.functions.upper('%' + value)));
 					}
 				}
 				
@@ -840,7 +840,7 @@ function SimpleSearch(dataSource){
 				if (sp.isCaseSensitive()) {
 					return column.not[textOperator](textValue);
 				}
-				return column.upper.not[textOperator](textValue.toUpperCase());
+				return column.upper.not[textOperator](q.functions.upper(textValue));
 			}
 
 			if (type == JSColumn.DATETIME) {
@@ -867,7 +867,7 @@ function SimpleSearch(dataSource){
 				if (sp.isCaseSensitive()) {
 					return column.eq(value);
 				}
-				return column.upper.eq(value.toUpperCase());
+				return column.upper.eq(q.functions.upper(value));
 			}
 			return column.eq(value);
 		}
@@ -924,7 +924,7 @@ function SimpleSearch(dataSource){
 				if (sp.isCaseSensitive()) {
 					return column.eq(value);
 				} else {
-					return column.upper.eq(value.toUpperCase());
+					return column.upper.eq(q.functions.upper(value));
 				}
 			} else if (columnLength > 0 && matchMode == STRING_MATCHING.CONTAINS && textValue.length == columnLength + 1) {
 				// searching for %1234% on a column with length 5
@@ -933,7 +933,7 @@ function SimpleSearch(dataSource){
 				if (sp.isCaseSensitive()) {
 					return q.or.add(column.like(value + '%')).add(column.like('%' + value));
 				} else {
-					return q.or.add(column.upper.like(value.toUpperCase() + '%')).add(column.upper.like('%' + value.toUpperCase()));
+					return q.or.add(column.upper.like(q.functions.upper(value) + '%')).add(column.upper.like('%' + q.functions.upper(value)));
 				}
 			}
 
@@ -941,7 +941,7 @@ function SimpleSearch(dataSource){
 			if (sp.isCaseSensitive()) {
 				return column[textOperator](textValue);
 			}
-			return column.upper[textOperator](textValue.toUpperCase());
+			return column.upper[textOperator](q.functions.upper(textValue));
 		}
 
 		if (type == JSColumn.DATETIME) {
