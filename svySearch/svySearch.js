@@ -933,7 +933,7 @@ function SimpleSearch(dataSource){
 				if (sp.isCaseSensitive()) {
 					return q.or.add(column.like(value + '%')).add(column.like('%' + value));
 				} else {
-					return q.and.add(column.upper.not.like(q.functions.upper(value + '%'))).add(column.upper.not.like(q.functions.upper('%' + value)));
+					return q.or.add(column.upper.like(q.functions.upper(value + '%'))).add(column.upper.like(q.functions.upper('%' + value)));
 				}
 			}
 
