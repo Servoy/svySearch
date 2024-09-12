@@ -299,6 +299,12 @@ function SimpleSearch(dataSource){
 	var alternateDateFormat = [];
 	
 	/**
+	 * @protected
+	 * @type {String}
+	 */
+	var onParseCondition = null;
+	
+	/**
 	 * Returns the date format which is used to parse user input for searching dates
 	 * 
 	 * @public 
@@ -576,6 +582,9 @@ function SimpleSearch(dataSource){
 		
 		var and = q.and;
 		var condition;
+		
+		/** @type {function({field:String,value:String,valueMax:String,quoted:Boolean,modifiers:{exclude:Boolean,exact:Boolean,gt:Boolean,ge:Boolean,lt:Boolean,le:Boolean,between:Boolean}}, SearchProvider, QBSelect):QBLogicalCondition} */
+		var onParseConditionFunction = onParseCondition ? scopes.svySystem.convertQualifiedNameToServoyMethod(onParseCondition) : null;
 
 		for (var i in terms) {
 			var term = terms[i];
@@ -596,6 +605,14 @@ function SimpleSearch(dataSource){
 					log.warn('Explicit search term for field [' + term.field + '] contains no value. Search term will be ignored.')
 					continue;
 				}
+				
+				if (onParseCondition) {
+					condition = onParseConditionFunction.call(this, term, sp, q);
+					if (condition instanceof QBLogicalCondition) {
+						and = and.add(condition);
+						continue;
+					}
+				}
 
 				// append condition
 				condition = this.parseCondition(term, sp, q);
@@ -615,6 +632,14 @@ function SimpleSearch(dataSource){
 				// skip non-implied search
 				if (!sp.isImpliedSearch()) {
 					continue;
+				}
+				
+				if (onParseCondition) {
+					condition = onParseConditionFunction.call(this, term, sp, q);
+					if (condition instanceof QBLogicalCondition) {
+						logical = logical.add(condition);
+						continue;
+					}
 				}
 
 				// append condition
@@ -1004,6 +1029,32 @@ function SimpleSearch(dataSource){
 		}
 		return this;
 	}
+	
+
+	/**
+	 * Sets a callback method that is fired whenever a query for a given filter is applied<p>
+	 * This can be used to either modify the filter before the query is created
+	 * or to enhance the provided QBSelect yourself<p>
+	 * To prevent the filter from adding criteria to the query as it would normally do, the method being
+	 * called can return <code>false</code><p>
+	 * The method called receives these parameters<ul>
+	 * 
+	 * <code>@param {{field:String,value:String,valueMax:String,quoted:Boolean,modifiers:{exclude:Boolean,exact:Boolean,gt:Boolean,ge:Boolean,lt:Boolean,le:Boolean,between:Boolean}}} term</code></br>
+	 * <code>@param {SearchProvider} sp </code></br>
+	 * <code>@param {QBSelect} qbSelect the query to enhance</code></br>
+	 * 
+	 * @param {function({field:String,value:String,valueMax:String,quoted:Boolean,modifiers:{exclude:Boolean,exact:Boolean,gt:Boolean,ge:Boolean,lt:Boolean,le:Boolean,between:Boolean}}, SearchProvider, QBSelect):QBLogicalCondition} callback
+	 * 
+	 * 
+	 * @return {SimpleSearch}
+	 *
+	 * @public
+	 * 
+	 *  */
+	this.setOnParseCondition = function(callback) {
+		onParseCondition = scopes.svySystem.convertServoyMethodToQualifiedName(callback);
+		return this;
+	}	
 }
 
 /**
