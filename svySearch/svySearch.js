@@ -1038,18 +1038,47 @@ function SimpleSearch(dataSource){
 	 * To prevent the filter from adding criteria to the query as it would normally do, the method being
 	 * called can return <code>false</code><p>
 	 * The method called receives these parameters<ul>
-	 * 
+	 *
 	 * <code>@param {{field:String,value:String,valueMax:String,quoted:Boolean,modifiers:{exclude:Boolean,exact:Boolean,gt:Boolean,ge:Boolean,lt:Boolean,le:Boolean,between:Boolean}}} term</code></br>
 	 * <code>@param {SearchProvider} sp </code></br>
 	 * <code>@param {QBSelect} qbSelect the query to enhance</code></br>
-	 * 
+	 *
 	 * @param {function({field:String,value:String,valueMax:String,quoted:Boolean,modifiers:{exclude:Boolean,exact:Boolean,gt:Boolean,ge:Boolean,lt:Boolean,le:Boolean,between:Boolean}}, SearchProvider, QBSelect):QBLogicalCondition} callback
-	 * 
-	 * 
+	 * @example<pre>
+	 * simpleSearch.setOnParseCondition(onParseCondition);
+	 *
+	 * function onParseCondition(term, sp, q) {
+	 *
+	 *	if (sp.getDataProviderID() === "categoryid") {
+	 *		var matches = [];
+	 *		var items = application.getValueListItems('categories');
+	 *		for (var index = 1; index <= items.getMaxRowIndex(); index++) {
+	 *			var row = items.getRowAsArray(index);
+	 *			var display = row[0];
+	 *			if (display.toLowerCase().indexOf(term.value.toLowerCase()) > -1) {
+	 *				matches.push(row[1]);
+	 *			}
+	 *		}
+	 *
+	 *		if (matches.length) {
+	 *			// return custom condition with partial match on display values
+	 *			return q.and.add(q.columns.categoryid.isin(matches))
+	 *		} else {
+	 *			// return empty condition & ignore search on this column
+	 *			return q.and;
+	 *		}
+	 *
+	 *	}
+	 *
+	 *	// use svySearch default condition
+	 *	return null;
+	 * }
+	 * </pre>
+	 *
 	 * @return {SimpleSearch}
 	 *
 	 * @public
-	 * 
+	 *
 	 *  */
 	this.setOnParseCondition = function(callback) {
 		onParseCondition = scopes.svySystem.convertServoyMethodToQualifiedName(callback);
