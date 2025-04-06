@@ -565,14 +565,22 @@ function SimpleSearch(dataSource){
 	
 	/**
 	 * Creates and returns a query object parsed from the user input
+	 * @param {QBSelect} [query] when provided, the search criteria will be added to the given query rather than a newly created query
 	 * @public 
 	 * @return {QBSelect}
 	 */
-	this.getQuery = function() {
-
-		var q = databaseManager.createSelect(dataSource);
-		q.result.addPk();
-
+	this.getQuery = function(query) {
+		var q = query;
+		if (query && query.getDataSource() !== dataSource) {
+			log.error('Provided query\'s dataSource does not match the dataSource of this search');
+			q = null;
+		}
+		
+		if (!q) {
+			q = databaseManager.createSelect(dataSource);
+			q.result.addPk();
+		}
+		
 		try {
 			var terms = parse(searchText);
 		} catch (e) {
