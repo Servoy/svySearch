@@ -52,6 +52,20 @@ var log = scopes.svyLogManager.getLogger('com.servoy.extensions.search.SimpleSea
 var defaultCaseSensitivity = application.getUserProperty('svy.search.defaultCaseSensitivity') == 'true' ? true : false;
 
 /**
+ * @type {java.util.Locale}
+ * @private
+ * @properties={typeid:35,uuid:"E278A02B-E1B9-45B5-A870-BFF6CCF9AEFC",variableType:-4}
+ */
+var locale = new java.util.Locale(i18n.getCurrentLanguage(), i18n.getCurrentCountry());
+
+/**
+ * @type {java.text.DecimalFormat}
+ * @private 
+ * @properties={typeid:35,uuid:"BC7B9403-B814-4185-90BB-2890AB67CBA9",variableType:-4}
+ */
+var decimalFormat = java.text.DecimalFormat.getInstance(locale);
+
+/**
  * Creates a search object
  * 
  * @public 
@@ -1377,8 +1391,11 @@ function SearchProvider(search, dataProviderID) {
 		}
 		
 		if (type == JSColumn.NUMBER) {
-			parsedValue = new Number(value);
-			if (isNaN(parsedValue)) return null;
+			try {
+				parsedValue = decimalFormat.parse(value);				
+			} catch (e) {
+				return null;
+			}
 			return parsedValue;
 		}
 
