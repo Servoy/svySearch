@@ -37,11 +37,10 @@ var INTEGER_MAX = {
 var YEAR_MAX = 9999;
 
 /**
- * TODO Implement logging
  * @private 
  * @properties={typeid:35,uuid:"7B710B9E-E6C8-44F3-8D74-DABD1198F442",variableType:-4}
  */
-var log = scopes.svyLogManager.getLogger('com.servoy.extensions.search.SimpleSearch');
+var log = application.getLogger('com.servoy.extensions.search.SimpleSearch');
 
 /**
  * The default value for case sensitivity 
@@ -219,7 +218,7 @@ function parseField(term) {
 
 			// empty value, i.e. "field:"
 			if (!term.value.length) {
-				log.warn('Parsed term with empty value for field: ' + term.field + ':' + term.value);
+				log.warn.log('Parsed term with empty value for field: ' + term.field + ':' + term.value);
 			}
 		}
 	}
@@ -451,14 +450,14 @@ function SimpleSearch(dataSource){
 
 		var jsColumnInfo = parseJSColumnInfo(this.getDataSource(), dataProviderID);
 		if (!jsColumnInfo) {
-			log.warn('Search Provider cannot be added, because no column was found for: dataSource=' + this.getDataSource() + ', dataProvider=' + dataProviderID);
+			log.warn.log('Search Provider cannot be added, because no column was found for: dataSource=' + this.getDataSource() + ', dataProvider=' + dataProviderID);
 			return null;
 		}
 		
 		// check if column type is supported
 		var type = jsColumnInfo.column.getType();
 		if (type != JSColumn.TEXT && type != JSColumn.INTEGER && type != JSColumn.NUMBER && type != JSColumn.DATETIME) {
-			log.warn('Search Provider cannot be added, because the dataProvider [' + dataProviderID + '] has unsupported column type [' + jsColumnInfo.column.getTypeAsString() + ']' );
+			log.warn.log('Search Provider cannot be added, because the dataProvider [' + dataProviderID + '] has unsupported column type [' + jsColumnInfo.column.getTypeAsString() + ']' );
 			return null;
 		}
 
@@ -466,7 +465,7 @@ function SimpleSearch(dataSource){
 		var spExists = false;
 		for (var i in searchProviders) {
 			if (searchProviders[i].getDataProviderID() == dataProviderID) {
-				log.warn('Search Provider already added for: ' + dataProviderID + ' and will be updated.');
+				log.warn.log('Search Provider already added for: ' + dataProviderID + ' and will be updated.');
 				spExists = true;
 				sp = searchProviders[i];
 				break;
@@ -586,7 +585,7 @@ function SimpleSearch(dataSource){
 	this.getQuery = function(query) {
 		var q = query;
 		if (query && query.getDataSource() !== dataSource) {
-			log.error('Provided query\'s dataSource does not match the dataSource of this search');
+			log.error.log('Provided query\'s dataSource does not match the dataSource of this search');
 			q = null;
 		}
 		
@@ -599,7 +598,7 @@ function SimpleSearch(dataSource){
 			var terms = parse(searchText);
 		} catch (e) {
 			//TODO: This can fail with an error when dealing with global valuelists (Check why)
-			log.error('Error parsing search text', e);
+			log.error.log('Error parsing search text', e);
 		}
 		
 		var and = q.and;
@@ -618,13 +617,13 @@ function SimpleSearch(dataSource){
 				var alias = term.field;
 				var sp = this.getSearchProvider(alias);
 				if (!sp) {
-					log.warn('Search alias not found: ' + alias + '. Search term will be ignored');
+					log.warn.log('Search alias not found: ' + alias + '. Search term will be ignored');
 					continue;
 				}
 
 				// check for empty field value
 				if (!term.value) {
-					log.warn('Explicit search term for field [' + term.field + '] contains no value. Search term will be ignored.')
+					log.warn.log('Explicit search term for field [' + term.field + '] contains no value. Search term will be ignored.')
 					continue;
 				}
 				
@@ -639,7 +638,7 @@ function SimpleSearch(dataSource){
 				// append condition
 				condition = this.parseCondition(term, sp, q);
 				if (!condition) {
-					log.debug('Search provider with alias [' + sp.getAlias() + '] will be skipped for value "' + term.value + '"');
+					log.debug.log('Search provider with alias [' + sp.getAlias() + '] will be skipped for value "' + term.value + '"');
 					continue;
 				}
 				and = and.add(condition);
@@ -667,7 +666,7 @@ function SimpleSearch(dataSource){
 				// append condition
 				condition = this.parseCondition(term, sp, q);
 				if (!condition) {
-					log.debug('Search provider [' + sp.getDataProviderID() + '] will be skipped for value "' + term.value + '"');
+					log.debug.log('Search provider [' + sp.getDataProviderID() + '] will be skipped for value "' + term.value + '"');
 					continue;
 				}
 				logical = logical.add(condition);
@@ -708,7 +707,7 @@ function SimpleSearch(dataSource){
 		// CHECK TYPE
 		if (type != JSColumn.TEXT && type != JSColumn.INTEGER && type != JSColumn.NUMBER && type != JSColumn.DATETIME) {
 			// should i check if type is unsupported ?
-			log.warn('SearchProvider [' + dp + '] has unsupported column type [' + jsColumn.getTypeAsString() + ']' );
+			log.warn.log('SearchProvider [' + dp + '] has unsupported column type [' + jsColumn.getTypeAsString() + ']' );
 			return null;
 		}
 
@@ -745,13 +744,13 @@ function SimpleSearch(dataSource){
 					break;
 						
 				default:
-					log.warn('Unexpected integer SQL type: ' + sqlType);
+					log.warn.log('Unexpected integer SQL type: ' + sqlType);
 					break;
 			}
 			
 			// CHECK MAX
 			if(value >= max){
-				log.debug('Value exceeds max integer value ('+max+') defined for SearchProvider ('+sp.getAlias()+') SQL type ('+sqlType+'). SearchProvider will be ignored');
+				log.debug.log('Value exceeds max integer value ('+max+') defined for SearchProvider ('+sp.getAlias()+') SQL type ('+sqlType+'). SearchProvider will be ignored');
 				return null;
 			}
 		}
@@ -767,7 +766,7 @@ function SimpleSearch(dataSource){
 			valueDateFormat = sp.getMatchingDateFormat(value);
 			value = sp.cast(value);
 			if (value === null) {
-				log.debug('Could not cast value for search provider data type for dataprovider ' + dp);
+				log.debug.log('Could not cast value for search provider data type for dataprovider ' + dp);
 				return null;
 			}
 		}
@@ -777,12 +776,12 @@ function SimpleSearch(dataSource){
 			valueMax = sp.applySubstitutions(term.valueMax);
 			// date format should match
 			if (sp.getMatchingDateFormat(valueMax) != valueDateFormat) {
-				log.debug('Format of max value doesn\'t match min value format on search provider for dataprovider ' + dp);
+				log.debug.log('Format of max value doesn\'t match min value format on search provider for dataprovider ' + dp);
 				return null;
 			}
 			valueMax = sp.cast(valueMax);
 			if (valueMax == NaN || valueMax == null) {
-				log.debug('Could not cast value max for search provider data type for dataprovider ' + dp);
+				log.debug.log('Could not cast value max for search provider data type for dataprovider ' + dp);
 				return null;
 			}
 		}
@@ -808,7 +807,7 @@ function SimpleSearch(dataSource){
 				maxDate = scopes.svyDateUtils.toEndOfDay(scopes.svyDateUtils.getLastDayOfYear(maxDate));
 			} else {
 				// Can't handle other type of Searches
-				log.debug('Could not search for dataprovider ' + dp + ' with dateFormat ' + valueDateFormat);
+				log.debug.log('Could not search for dataprovider ' + dp + ' with dateFormat ' + valueDateFormat);
 				return null;
 			}
 			
@@ -879,7 +878,7 @@ function SimpleSearch(dataSource){
 				
 				if (columnLength > 0 && textValue.length > columnLength) {
 					// value does not fit in column and cannot be found
-					log.debug('Search value longer than column ' + dp);
+					log.debug.log('Search value longer than column ' + dp);
 					return null;
 				}
 
@@ -900,7 +899,7 @@ function SimpleSearch(dataSource){
 		if (type === JSColumn.TEXT && columnLength > 0) {
 			if (value.length > columnLength) {
 				// value does not fit in column and cannot be found
-				log.debug('Search value longer than column ' + dp);
+				log.debug.log('Search value longer than column ' + dp);
 				return null;
 			} else if (term.modifiers.between && valueMax && valueMax.length > columnLength) {
 				// max value for between search larger than the column; turn this into a >= query
@@ -1403,7 +1402,7 @@ function SearchProvider(search, dataProviderID) {
 			return value;
 		}
 
-		log.warn('SearchProvider [' + this.getDataProviderID() + '] has unsupported column type');
+		log.warn.log('SearchProvider [' + this.getDataProviderID() + '] has unsupported column type');
 		return value;
 	}
 	
@@ -1563,12 +1562,12 @@ function parseJSColumnInfo(dataSource, dataProviderID) {
 		table = databaseManager.getTable(relation.foreignDataSource);
 	}
 	if (!table) {
-		log.warn('Parse column info failed. No table found for: ' + dataSource);
+		log.warn.log('Parse column info failed. No table found for: ' + dataSource);
 		return null;
 	}
 	var column = table.getColumn(colName)
 	if (!column) {
-		log.warn('Parse column info failed. No column found for: dataSource=' + dataSource + ', dataProvider=' + dataProviderID);
+		log.warn.log('Parse column info failed. No column found for: dataSource=' + dataSource + ', dataProvider=' + dataProviderID);
 		return null;
 	}
 	return { table: table, column: column };
@@ -1747,7 +1746,7 @@ function dataProviderHasXDBRelation(dataProviderID) {
 	while (path.length) {
 		var relationName = path.pop()
 		if (scopes.svyDataUtils.isCrossDBRelation(relationName)) {
-			log.warn('Invalid data provider [' + dataProviderID + '] has a cross-database relation [' + relationName + '] which is not supported');
+			log.warn.log('Invalid data provider [' + dataProviderID + '] has a cross-database relation [' + relationName + '] which is not supported');
 			return true;
 		}
 	}
