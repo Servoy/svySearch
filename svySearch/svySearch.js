@@ -62,7 +62,7 @@ var locale = new java.util.Locale(i18n.getCurrentLanguage(), i18n.getCurrentCoun
  * @private 
  * @properties={typeid:35,uuid:"BC7B9403-B814-4185-90BB-2890AB67CBA9",variableType:-4}
  */
-var decimalFormat = java.text.DecimalFormat.getInstance(locale);
+var numberFormat = java.text.NumberFormat.getInstance(locale);
 
 /**
  * Creates a search object
@@ -1381,7 +1381,7 @@ function SearchProvider(search, dataProviderID) {
 		}
 		
 		if (type == JSColumn.INTEGER) {
-			if(this.isCastInteger()){
+			if (this.isCastInteger()){
 				return value;
 			}
 			parsedValue = new Number(value);
@@ -1391,11 +1391,14 @@ function SearchProvider(search, dataProviderID) {
 		
 		if (type == JSColumn.NUMBER) {
 			try {
-				parsedValue = decimalFormat.parse(value);				
+				var pos = new java.text.ParsePosition(0);
+				parsedValue = numberFormat.parse(value, pos);
+				if (parsedValue && pos.getIndex() === value.length) {
+					return parsedValue;
+				}
 			} catch (e) {
-				return null;
 			}
-			return parsedValue;
+			return null;
 		}
 
 		if (type == JSColumn.TEXT) {
