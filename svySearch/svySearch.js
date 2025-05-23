@@ -690,11 +690,68 @@ function SimpleSearch(dataSource){
 		var jsColumn = sp.getJSColumn();
 		var type = jsColumn.getType();
 		var columnLength = jsColumn.getLength();
+		var valueListName = sp.getValueList();
+		var matchMode = sp.getStringMatching();
 		var valueDateFormat;
 		/** @type {String} */
 		var value;
 		/** @type {String} */
 		var valueMax;
+		
+		if (term.value && valueListName) {
+			var jsList = solutionModel.getValueList(valueListName);
+			if (!jsList) {
+				log.warn.log('Value list [' + valueListName + '] is undefined. Search provider will be ignored');
+				return null;
+			}
+			
+			if (jsList.valueListType === JSValueList.DATABASE_VALUES && 
+					(!jsList.dataSource || databaseManager.getDataSourceServerName(this.getDataSource()) === databaseManager.getDataSourceServerName(jsList.dataSource)) && 
+					jsList.getReturnDataProviderIds().length === 1 && 
+					(jsList.relationName === null || scopes.svyDataUtils.isGlobalRelation(jsList.relationName))) {
+				
+				//database value list from same server or a global relation, so a simple join can be used
+				var vlColumn = getSearchColumnForValueList(jsList, q, column);
+				//override the column to be searched in
+				column = vlColumn.qbColumn;
+				//override jsColumn being queried, its type and length
+				jsColumn = vlColumn.jsColumn;
+				type = jsColumn.getType();
+				columnLength = vlColumn.columnLength;
+				
+				log.debug.log('Value list [' + valueListName + '] is a database value list from the same server or a global relation. Search provider [' + jsColumn.getQuotedSQLName() + '] will be used instead');
+			} else {
+				if (term.modifiers.ge || term.modifiers.gt || term.modifiers.le || term.modifiers.lt) {
+					//TODO: for a value list with custom values this could be done, while for global method value lists we have no control over what the method does, so this can't work
+                    log.warn.log('Value list [' + valueListName + '] cannot be used with greater than or less than modifiers. Search provider will be ignored');
+                    return null;
+				}
+				//simple IN-Query for the real values found in the value list
+				var valueListSearchValue = term.value;
+				if (term.modifiers.ge) valueListSearchValue = '>=' + term.value;
+				else if (term.modifiers.gt) valueListSearchValue = '>' + term.value;
+				else if (term.modifiers.le) valueListSearchValue = '<=' + term.value;
+				else if (term.modifiers.lt) valueListSearchValue = '<' + term.value;
+				else if (term.modifiers.between) valueListSearchValue = term.value + '...' + term.valueMax;
+				
+				var valueListRealValues = scopes.svyDataUtils.getValueListRealValues(valueListName, valueListSearchValue, term.modifiers.exact ? STRING_MATCHING.EQUALS : sp.getStringMatching(), sp.isCaseSensitive());
+				if (valueListRealValues && valueListRealValues.length > 0) {
+					//TODO: this is not really necessary, as Servoy would create a temp table in case too many IN values are added to the query
+					if (valueListRealValues.length > 100) {
+						log.warn.log('Value list [' + valueListName + '] contains too many values (' + valueListRealValues.length + '). Search provider will be ignored');
+                        return null;
+					}
+					if (term.modifiers.exclude) {						
+						return column.not.isin(valueListRealValues);
+					} else {						
+						return column.isin(valueListRealValues);
+					}
+				} else {
+					log.debug.log('Value list [' + valueListName + '] does not contain value [' + term.value + ']. Search provider will be ignored');
+					return null;
+				}
+			}
+		}
 
 		// apply substitutions
 		if (term.value) {
@@ -832,7 +889,6 @@ function SimpleSearch(dataSource){
 			}
 		}
 
-		var matchMode = sp.getStringMatching();
 		var textOperator = matchMode === STRING_MATCHING.EQUALS ? 'eq' : 'like';
 
 		//	APPLY Modifiers
@@ -1148,6 +1204,12 @@ function SearchProvider(search, dataProviderID) {
 	 * @protected
 	 */
 	this.substitutions = { };
+	
+	/**
+	 * @protected 
+	 * @type {String}
+	 */
+	this.valueList = null;
 
 	/**
 	 * @private
@@ -1289,6 +1351,25 @@ function SearchProvider(search, dataProviderID) {
 	 */
 	this.getUseLocalDateTime = function() {
 		return useLocalDateTime;
+	}
+	
+	/**
+	 * Sets a value list that will be used to replace the search value with the real value
+	 * @public 
+	 * @return {SearchProvider}
+	 */
+	this.setValueList = function(valueListName) {
+		this.valueList = valueListName;
+        return this;
+	}
+	
+	/**
+	 * Get the value list that will be used to replace the search value with the real value
+	 * @public
+	 * @return {String}
+	 */
+	this.getValueList = function() {
+		return this.valueList;
 	}
 
 	/**
@@ -1731,3 +1812,218 @@ function dataProviderHasXDBRelation(dataProviderID) {
 	return false;
 }
 
+/**
+ * Adds a join to the value list's table, replaces the search column with the display column of the valuelist and 
+ * returns an object with the new query column, its jsColumn and the display column's length to allow svySearch
+ * to continue its regular flow with the new column
+ * 
+ * @param {JSValueList} jsList
+ * @param {QBSelect} q
+ * @param {QBColumn} column
+ * @return {{qbColumn: QBColumn, jsColumn: JSColumn, columnLength: Number}}
+ * @private 
+ * @properties={typeid:24,uuid:"2F15B96B-3EB3-40C8-AFE3-0CC29651862B"}
+ */
+function getSearchColumnForValueList(jsList, q, column) {
+	var jValueList = null;
+	var existingJoins = q.joins.getJoins();
+	for (var j = 0; j < existingJoins.length; j++) {
+		if (existingJoins[j].getTableAlias() === 'valuelist_' + jsList.name) {
+			//already added
+			jValueList = existingJoins[j];
+			break;
+		}
+	}
+	
+	var listDataSource = jsList.dataSource || solutionModel.getRelation(jsList.relationName).foreignDataSource;
+	if (!jValueList) {
+		//datasource is either the value lists's table or the (global) related table
+		//join is added with alias valuelist_<valueListName>
+		jValueList = q.joins.add(listDataSource, QBJoin.LEFT_OUTER_JOIN, 'valuelist_' + jsList.name);
+		jValueList.on.add(column.eq(jValueList.getColumn(jsList.getReturnDataProviderIds()[0])));
+		
+		if (jsList.relationName) {
+			var relationItems = solutionModel.getRelation(jsList.relationName).getRelationItems();
+			for (var i = 0; i < relationItems.length; i++) {
+				var relationItem = relationItems[i];
+				
+				/** @type {String} */
+				var relPrimaryValue;
+				if (relationItem.primaryLiteral != null) {
+					relPrimaryValue = relationItem.primaryLiteral
+				} else if (relationItem.primaryDataProviderID) {
+					relPrimaryValue = eval(relationItem.primaryDataProviderID);
+				}
+	
+				var op;
+				var useNot = false;
+				var useCaseInsensitive = false;
+				var useIsNull = false;
+				switch (relationItem.operator) {
+					case "=":
+						op = "eq"
+						break;
+					case ">":
+						op = "gt"
+						break;
+					case ">=":
+						op = "ge"
+						break;
+					case "<":
+						op = "lt"
+						break;
+					case "<=":
+						op = "le"
+						break;
+					case "!=":
+						op = "eq"
+						useNot = true
+						break;
+					case "like":
+						op = "like"
+						break;
+					case "not like":
+						op = "like"
+						useNot = true;
+						break;
+					case "#=":
+						op = "eq"
+						useCaseInsensitive = true
+						break;
+					case "#!=":
+						op = "eq"
+						useCaseInsensitive = true;
+						useNot = true;
+						break;
+					case "#like":
+						op = "like"
+						useCaseInsensitive = true;
+						break;
+					case "#not like":
+						op = "like"
+						useCaseInsensitive = true;
+						useNot = true;
+						break;
+					case "^||=":
+						op = "eq";
+						useIsNull = true;
+						break;
+					case "^||>":
+						op = "gt"
+						useIsNull = true;
+						break;
+					case "^||>=":
+						op = "ge"
+						useIsNull = true;
+						break;
+					case "^||<":
+						op = "lt"
+						useIsNull = true;
+						break;
+					case "^||<=":
+						op = "le"
+						useIsNull = true;
+						break;
+					case "^||!=":
+						op = "eq"
+						useNot = true
+						useIsNull = true;
+						break;
+					case "^||like":
+						op = "like"
+						useIsNull = true;
+						break;
+					case "^||not like":
+						op = "like"
+						useNot = true;
+						useIsNull = true;
+						break;
+					case "^||#=":
+						op = "eq";
+						useCaseInsensitive = true;
+						useIsNull = true;
+						break;
+					case "^||#!=":
+						op = "eq";
+						useCaseInsensitive = true;
+						useNot = true;
+						useIsNull = true;
+						break;
+					case "^||#like":
+						op = "like";
+						useCaseInsensitive = true;
+						useIsNull = true;
+						break;
+					case "^||#not like":
+						op = "like";
+						useCaseInsensitive = true;
+						useNot = true;
+						useIsNull = true;
+						break;
+					default:
+						log.warn.log('Unknown operator [' + relationItem.operator + '] for related valuelist [' + jsList.name + ']');
+						continue;
+				}
+	
+				// get the column 
+				var qbColumn = jValueList.getColumn(relationItem.foreignColumnName);
+				
+				// like search
+				if (op == "like" && relPrimaryValue && relPrimaryValue instanceof String) {
+					relPrimaryValue = "%" + relPrimaryValue + "%";
+				}
+				
+				// case insensitive
+				if (useCaseInsensitive) {
+					qbColumn = qbColumn.lower;
+					relPrimaryValue =  (relPrimaryValue && relPrimaryValue instanceof String) ? relPrimaryValue.toLowerCase() : relPrimaryValue;
+				}
+				
+				// apply not operator
+				if (useNot) {
+					qbColumn = qbColumn.not;
+				}
+				
+				// include null
+				if (useIsNull) {
+					jValueList.on.add(q.or.add(qbColumn.isNull).add(qbColumn[op](relPrimaryValue)))
+				} else {
+					jValueList.on.add(qbColumn[op](relPrimaryValue));
+				}
+			}
+		}
+	}
+
+	var displayDataProviders = jsList.getDisplayDataProviderIds();
+	var jsTable = databaseManager.getTable(listDataSource);
+	var jsColumn = jsTable.getColumn(displayDataProviders[0]);
+	
+	var result = {
+		jsColumn: jsColumn,
+        qbColumn: null,
+		columnLength: jsColumn.getLength()
+	}
+	
+	//add the actual column to query
+	if (displayDataProviders.length === 3) {
+		result.qbColumn = jValueList
+			.getColumn(displayDataProviders[0])
+			.concat(jsList.separator)
+			.concat(jValueList.getColumn(displayDataProviders[1]))
+			.concat(jsList.separator)
+			.concat(jValueList.getColumn(displayDataProviders[2]));
+		result.columnLength += (jsList.separator ? jsList.separator.length : 0) + (jsTable.getColumn(displayDataProviders[1]) ? jsTable.getColumn(displayDataProviders[1]).getLength() : 0);
+		result.columnLength += (jsList.separator ? jsList.separator.length : 0) + (jsTable.getColumn(displayDataProviders[2]) ? jsTable.getColumn(displayDataProviders[2]).getLength() : 0);
+	} else if (displayDataProviders.length === 2) {
+		result.qbColumn = jValueList
+			.getColumn(displayDataProviders[0])
+			.concat(jsList.separator)
+			.concat(jValueList.getColumn(displayDataProviders[1]));
+		result.columnLength += (jsList.separator ? jsList.separator.length : 0) + (jsTable.getColumn(displayDataProviders[1]) ? jsTable.getColumn(displayDataProviders[1]).getLength() : 0);
+	} else {
+		result.qbColumn = jValueList
+			.getColumn(displayDataProviders[0]);
+	}
+	
+	return result;
+}
