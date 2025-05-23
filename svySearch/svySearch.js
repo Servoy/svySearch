@@ -81,7 +81,6 @@ function createSimpleSearch(dataSource) {
 	return new SimpleSearch(ds);
 }
 
-
 /**
  * @private  
  * @param {String} searchText
@@ -226,8 +225,6 @@ function parseField(term) {
 	return term;
 }
 
-
-
 /**
  * @private 
  * @param {{
@@ -360,7 +357,7 @@ function SimpleSearch(dataSource){
 	 * @return {Array<String>}
 	 */
 	this.getAlternateDateFormats = function(){
-		return arrayCopy(alternateDateFormat);
+		return alternateDateFormat.slice(0);
 	}
 	
 	/**
@@ -503,7 +500,7 @@ function SimpleSearch(dataSource){
 	 * @return {Array<SearchProvider>}
 	 */
 	this.getAllSearchProviders = function(){
-		return arrayCopy(searchProviders);
+		return searchProviders.slice(0);
 	}
 	
 	/**
@@ -1543,7 +1540,6 @@ function parseQBColumn(q, dataProviderID) {
 	return joins[lastJoin].columns[columnName];
 }
 
-
 /**
  * Parses the JSTable & Column for a given dataprovider in a datasource.
  * Traverses to relation
@@ -1575,8 +1571,6 @@ function parseJSColumnInfo(dataSource, dataProviderID) {
 	}
 	return { table: table, column: column };
 }
-
-
 
 /**
  * TODO Move to svyUtils String scope
@@ -1704,7 +1698,6 @@ function parseDateFormat(dateFormat) {
 	return format;
 }
 
-
 /**
  * TODO Move to String utils scope in svyUtils
  * 
@@ -1716,24 +1709,6 @@ function parseDateFormat(dateFormat) {
 function regexpEscape(s){
     return s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
 }
-
-/**
- * Shallow copy of array
- * TODO This should be moved to utils scope
- * @private 
- * @param {Array<*>} a
- * @return {Array<*>}
- * 
- * @properties={typeid:24,uuid:"714324D9-AFD5-4C3E-8462-2D1EB9208ADF"}
- */
-function arrayCopy(a) {
-	var a2 = [];
-	a.forEach(function(e) {
-		a2.push(e)
-	});
-	return a2;
-}
-
 
 /**
  * Check a data provider string for presence of a relation which is cross-database
