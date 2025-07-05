@@ -420,6 +420,29 @@ function SimpleSearch(dataSource){
 	}
 	
 	/**
+	 * Removes the search provider with the given dataProvider
+	 * 
+	 * @public
+	 * @param {String} dataProviderID The dataprovider to remove
+	 * @return {SearchProvider} the SearchProvider removed or null if not found
+	 */
+	this.removeSearchProvider = function(dataProviderID) {
+		var idx = searchProviders.findIndex(/** @type {SearchProvider} */ sp => sp.getDataProviderID() === dataProviderID);
+		return idx !== -1 ? searchProviders.splice(idx, 1)[0] : null;
+	}
+	
+	/**
+	 * Clears all search providers
+	 * 
+	 * @public 
+	 * @return {SimpleSearch}
+	 */
+	this.clearSearchProviders = function() {
+		searchProviders = [];
+		return this;
+	}	
+	
+	/**
 	 * Returns the data source used by the search object
 	 * @public 
 	 * @return {String}
