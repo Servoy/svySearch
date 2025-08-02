@@ -640,6 +640,10 @@ function SimpleSearch(dataSource){
 					log.warn.log('Search alias not found: ' + alias + '. Search term will be ignored');
 					continue;
 				}
+				
+				if (sp.isExcluded()) {
+					continue;
+				}
 
 				// check for empty field value
 				if (!term.value) {
@@ -669,6 +673,11 @@ function SimpleSearch(dataSource){
 			var logical = term.modifiers.exclude ? q.and : q.or;
 			for (var j in searchProviders) {
 				sp = searchProviders[j];
+				
+				//skip excluded search providers
+				if (sp.isExcluded()) {
+					continue;
+				}
 
 				// skip non-implied search
 				if (!sp.isImpliedSearch()) {
@@ -1203,6 +1212,12 @@ function SearchProvider(search, dataProviderID) {
 	 * @private
 	 * @type {Boolean}
 	 */
+	var excluded = false;	
+
+	/**
+	 * @private
+	 * @type {Boolean}
+	 */
 	var implied = true;
 
 	/**
@@ -1311,6 +1326,27 @@ function SearchProvider(search, dataProviderID) {
 	this.getAlias = function() {
 		return a;
 	}
+
+	/**
+	 * Specifies whether this search provider is excluded from the search
+	 *
+	 * @public
+	 * @param {Boolean} b
+	 * @return {SearchProvider}
+	 */
+	this.setExcluded = function(b) {
+		excluded = b;
+		return this;
+	}
+
+	/**
+	 * Whether this search provider is excluded from the search
+	 * @public
+	 * @return {Boolean}
+	 */
+	this.isExcluded = function() {
+		return excluded;
+	}	
 
 	/**
 	 *
