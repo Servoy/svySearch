@@ -533,48 +533,15 @@ function SimpleSearch(dataSource){
 	 * @return {SearchProvider}
 	 */
 	this.getSearchProvider = function(aliasOrDataProvider){
-		for(var i in searchProviders){
-			if(
-				searchProviders[i].getDataProviderID() == aliasOrDataProvider ||
-				searchProviders[i].getAlias() == aliasOrDataProvider	
-			){
-				return searchProviders[i]
+		aliasOrDataProvider = aliasOrDataProvider ? aliasOrDataProvider.toLowerCase() : null;
+		for (var i in searchProviders) {
+			if (searchProviders[i].getDataProviderID() == aliasOrDataProvider ||
+					(searchProviders[i].getAlias() && searchProviders[i].getAlias().toLowerCase() == aliasOrDataProvider)) {
+				return searchProviders[i];
 			}
 		}
 		return null;
 	}
-	
-//	/**
-//	 * @public 
-//	 * @param {String} dataProviderID
-//	 * @param {String} [alias]
-//	 */
-//	this.addDataProvider = function(dataProviderID, alias){
-//		if(!alias){
-//			alias = dataProviderID;
-//		}
-//		this.dataProviders[alias] = dataProviderID;
-//	}
-//	
-//	/**
-//	 * @public 
-//	 * @return {Array<String>}
-//	 */
-//	this.getDataProviderAliases = function(){
-//		var a = [];
-//		for(var alias in this.dataProviders){
-//			a.push(alias);
-//		}
-//		return a.sort();
-//	}
-//	
-//	/**
-//	 * @public 
-//	 * @return {String}
-//	 */
-//	this.getDataProviderID = function(alias){
-//		return this.dataProviders[alias];
-//	}
 	
 	/**
 	 * Set the raw, user input to be parsed
