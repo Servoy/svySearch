@@ -922,9 +922,9 @@ function SimpleSearch(dataSource){
 					// that could be a problem for DBs that do not accept search parameters longer than the column
 					// turning that specific case into an extra AND
 					if (sp.isCaseSensitive()) {
-						return q.and.add(column.not.like(value + '%')).add(column.not.like('%' + value));
+						return q.or.add(column.like(value + '%')).add(column.like('%' + value));
 					} else {
-						return q.and.add(column.upper.not.like(q.functions.upper(value + '%'))).add(column.upper.not.like(q.functions.upper('%' + value)));
+						return q.or.add(column.upper.like(q.functions.upper(value + '%'))).add(column.upper.like(q.functions.upper('%' + value)));
 					}
 				}
 				
