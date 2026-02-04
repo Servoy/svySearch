@@ -669,7 +669,7 @@ function SimpleSearch(dataSource){
 			}
 			and = and.add(logical);
 		}
-		q.where.add(and);
+		q.where.add('svySearch', and);
 		return q;
 	}
 	
